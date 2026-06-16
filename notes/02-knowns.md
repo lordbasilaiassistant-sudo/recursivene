@@ -103,8 +103,15 @@ gardener who pretends the garden is finished is lying.
     project's fit/predict/cost_to_know contract. Demonstrated: it makes known **4/4** of a stream of
     **d=4 compositional unknowns** (N=500–1000 each) where fixed features wall **0/4**, AND learns a
     real **2-D sensory image to 99% recovery** (relative MSE 0.8%) from raw coordinates. The entity's
-    reach is no longer 1-D frequencies. *Evidence: run_l2.py, validate_l2.py (2/2 PASS).* Next: wire
-    DeepEncoder in as the entity's world-model backend so Nous lives in richer/sensory worlds.
+    reach is no longer 1-D frequencies. *Evidence: run_l2.py, validate_l2.py (2/2 PASS).*
+
+17. **L2 is wired into a LIVING entity — Nous-L2 lives in multi-D worlds.** `entity_l2.py`: the learned
+    representation (SharedDeepBackend, persistent + growable) as the entity's world-model backend, with
+    the full scaffolding (identity, vitals, kill switch, race-to-0, capacity growth). Nous-L2 made **15+
+    unknowns known in a d=3 world and got 12.7× cheaper over its life** (held-out MSE 0.0060→0.0005) as
+    its body accumulated the world's shared structure — learned transfer past the curse of
+    dimensionality — while tuning its own learning rate and persisting identity across sessions.
+    *Evidence: run_l2_entity.py, run_entity_l2.py, validate_l2_entity.py (3/3 PASS).*
 
 ## REMAINING — the experimental program has reached its fixpoint
 

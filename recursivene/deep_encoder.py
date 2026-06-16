@@ -109,6 +109,28 @@ class SharedDeepBackend:
         pred = np.tanh(held @ self.A.T + self.a) @ v + b
         return float(np.mean((pred - th) ** 2))
 
+    def grow(self, add=32, seed=0):
+        """Widen the learned body (more hidden units) when the current representation can't reach a
+        frontier — the garden's capacity-growth, at the representation level. Adam state grows with it;
+        the per-target head is fresh each call so it auto-sizes to the new width."""
+        rng = np.random.default_rng(seed)
+        nA = rng.normal(0, np.sqrt(1.0 / self.d), (int(add), self.d))
+        self.A = np.vstack([self.A, nA]); self.a = np.concatenate([self.a, np.zeros(int(add))])
+        self._mA = np.vstack([self._mA, np.zeros((int(add), self.d))])
+        self._vA = np.vstack([self._vA, np.zeros((int(add), self.d))])
+        self._ma = np.concatenate([self._ma, np.zeros(int(add))])
+        self._va = np.concatenate([self._va, np.zeros(int(add))])
+        self.H += int(add)
+        return self.H
+
+    def state(self):
+        return {"A": self.A.tolist(), "a": self.a.tolist(), "H": self.H, "d": self.d}
+
+    def load_state(self, s):
+        self.A = np.array(s["A"]); self.a = np.array(s["a"]); self.H = s["H"]
+        self._mA = np.zeros_like(self.A); self._vA = np.zeros_like(self.A)
+        self._ma = np.zeros_like(self.a); self._va = np.zeros_like(self.a)
+
 
 def cost_to_know(target_fn, in_dim, tau, sizes=(250, 500, 1000, 2000, 4000),
                  hidden=128, obs_noise=0.02, seed=0, iters=5000):
