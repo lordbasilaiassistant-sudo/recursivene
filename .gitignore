@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# RecursiveNe runtime artifacts (regenerable — produced by running the experiments)
+run_logs/
+vitals/
+# rollback snapshots from the closure self-edits (gitignore has NO inline comments — keep on own line)
+*.bak.*
+
+# Local tooling / editor config (also the only place with absolute Windows paths)
+.claude/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Keep the repo about the code + notes; runtime logs are reproducible via the experiments.
+# (To showcase results without running, you can force-add a sample, e.g.:
+#   git add -f run_logs/closure_summary.json run_logs/garden_rings.jsonl )
