@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>RecursiveNe — Nous: a brain learning to know</title>
+<link rel="preconnect" href="https://unpkg.com" />
+<style>
+  :root{ --bg:#04050a; --ink:#d3dbec; --dim:#838fab; --gold:#ffd98a; --green:#5fe08a;
+         --grey:#6a6f7a; --bone:#c9c4b8; --crimson:#ff3b5c; --violet:#9a7dff; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; overflow:hidden; }
+  #app{ position:fixed; inset:0; }
+  canvas{ display:block; }
+  .panel{ position:fixed; background:rgba(7,10,18,.66); border:1px solid rgba(120,140,190,.16);
+    border-radius:11px; backdrop-filter:blur(7px); padding:11px 13px; font-size:12px; line-height:1.5;
+    box-shadow:0 6px 30px rgba(0,0,0,.4); }
+  #banner{ top:0; left:50%; transform:translateX(-50%); margin-top:9px; border-radius:8px;
+    padding:6px 15px; font-size:11px; letter-spacing:.04em; color:var(--dim);
+    border-color:rgba(255,90,110,.30); background:rgba(20,8,12,.74); white-space:nowrap; z-index:10; }
+  #banner b{ color:var(--crimson); letter-spacing:.06em; }
+  #hud{ top:50px; left:13px; width:272px; }
+  #hud h1{ font-size:14px; margin:0 0 2px; color:#fff; letter-spacing:.02em; }
+  #hud .sub{ color:var(--dim); font-size:10.5px; margin-bottom:9px; }
+  #warn{ color:var(--crimson); font-size:10px; margin-bottom:6px; display:none; }
+  .row{ display:flex; justify-content:space-between; gap:8px; cursor:help; padding:1.5px 4px; border-radius:5px; }
+  .row:hover{ background:rgba(120,150,220,.13); }
+  .row .k{ color:var(--dim); } .row .v{ color:var(--ink); font-variant-numeric:tabular-nums; transition:color .2s; }
+  .row.strain .v{ color:var(--crimson); font-weight:700; text-shadow:0 0 10px rgba(255,59,92,.6); }
+  .row.grow .v{ color:var(--gold); }
+  #feed{ top:50px; right:13px; width:286px; max-height:44vh; overflow:auto; }
+  #feed h2,#race h2{ font-size:11px; margin:0 0 7px; color:var(--dim); letter-spacing:.05em; }
+  .edit{ font-size:10.5px; padding:4px 7px; margin:3px 0; border-radius:6px; border-left:3px solid var(--grey);
+    background:rgba(255,255,255,.02); transition:background .2s, transform .2s; }
+  .edit.live{ background:rgba(255,217,138,.12); transform:translateX(-2px); }
+  .edit.acc{ border-left-color:var(--green); } .edit.rej{ border-left-color:var(--grey); opacity:.8; }
+  .edit.tamper{ border-left-color:var(--crimson); }
+  .edit .t{ color:var(--dim); } .edit .d{ color:var(--ink); } .edit .delta{ color:var(--green); }
+  .edit .tag{ color:var(--crimson); font-size:9.5px; letter-spacing:.04em; }
+  #race{ right:13px; bottom:104px; width:286px; display:none; }
+  .bar{ height:15px; border-radius:3px; background:rgba(255,255,255,.06); position:relative; margin:4px 0 9px; overflow:hidden; }
+  .bar > span{ position:absolute; left:0; top:0; bottom:0; border-radius:3px; transition:width .8s ease; }
+  .bar .lab{ position:absolute; left:7px; top:0; font-size:9.5px; line-height:15px; color:#fff; }
+  #transport{ left:50%; transform:translateX(-50%); bottom:13px; width:min(900px,94vw); }
+  #scrubwrap{ position:relative; height:42px; }
+  #spark{ position:absolute; inset:0; width:100%; height:100%; }
+  #scrub{ position:absolute; inset:0; width:100%; height:100%; -webkit-appearance:none; appearance:none;
+    background:transparent; margin:0; cursor:pointer; }
+  #scrub::-webkit-slider-thumb{ -webkit-appearance:none; width:3px; height:42px; background:#fff; border:0; box-shadow:0 0 8px #fff; }
+  #scrub::-moz-range-thumb{ width:3px; height:42px; background:#fff; border:0; }
+  #controls{ display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap; }
+  button,.chip{ background:rgba(140,160,210,.10); color:var(--ink); border:1px solid rgba(120,140,190,.22);
+    border-radius:7px; padding:6px 10px; font:inherit; font-size:11px; cursor:pointer; transition:all .15s; }
+  button:hover,.chip:hover{ background:rgba(140,160,210,.22); border-color:rgba(150,175,230,.5); }
+  .chip.on{ background:rgba(255,217,138,.18); border-color:var(--gold); color:#fff; }
+  #seasonlab{ color:var(--dim); font-size:11px; min-width:118px; }
+  #seasonlab b{ color:#fff; }
+  a.data{ color:var(--gold); text-decoration:none; font-size:11px; border-bottom:1px dotted var(--gold); }
+  #tip{ position:fixed; pointer-events:none; background:#0b1020; border:1px solid rgba(120,140,190,.4);
+    border-radius:6px; padding:6px 9px; font-size:10.5px; color:var(--ink); display:none; z-index:50; max-width:260px; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #legend{ left:13px; bottom:13px; width:272px; display:none; font-size:10.5px; color:var(--dim); }
+  #legend b{ color:var(--ink); } #legend .sw{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+  #err{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; text-align:center;
+    color:var(--crimson); font-size:14px; padding:40px; }
+  #title-card{ position:fixed; left:50%; top:42%; transform:translate(-50%,-50%); text-align:center; z-index:8;
+    transition:opacity 1.2s; pointer-events:none; }
+  #title-card h1{ font-size:30px; margin:0; color:#fff; letter-spacing:.06em; font-weight:600;
+    text-shadow:0 0 30px rgba(154,125,255,.6); }
+  #title-card p{ color:var(--dim); font-size:12px; margin:6px 0 0; letter-spacing:.05em; }
+  @media (max-width:760px){ #hud,#feed,#race,#legend{ position:static; width:auto; margin:6px; } #title-card h1{ font-size:20px; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="banner" class="panel">REPLAY of the repo's last-run outputs — <b>NOT LIVE</b> · source: viz/brain_data.json · meta.live=false</div>
+
+<div id="title-card"><h1>Nous</h1><p>a brain learning to know — ever more cheaply</p></div>
+
+<div id="hud" class="panel">
+  <h1 id="title">Nous</h1>
+  <div class="sub" id="telos"></div>
+  <div id="warn"></div>
+  <div id="rows"></div>
+</div>
+
+<div id="feed" class="panel">
+  <h2>SELF-EDITS — the brain rewiring itself (held-out gated)</h2>
+  <div id="edits"></div>
+</div>
+
+<div id="race" class="panel">
+  <h2>RACE — learned self-edit search vs human hand-tuning</h2>
+  <div id="racebody"></div>
+</div>
+
+<div id="legend" class="panel"></div>
+
+<div id="transport" class="panel">
+  <div id="scrubwrap">
+    <canvas id="spark"></canvas>
+    <input id="scrub" type="range" min="1" max="40" step="1" value="1" />
+  </div>
+  <div id="controls">
+    <button id="play">❚❚ pause</button>
+    <button id="step-">◀</button><button id="step+">▶</button>
+    <button id="speed">1×</button>
+    <button id="spike">⚡ jump to strain</button>
+    <button id="reset">reset view</button>
+    <span id="seasonlab"></span>
+    <span class="chip" id="c-race">race</span>
+    <span class="chip on" id="c-edits">self-edits</span>
+    <span class="chip" id="c-labels">legend</span>
+    <span class="chip" id="c-lite">lite</span>
+    <a class="data" href="brain_data.json" target="_blank" rel="noopener">show me the data ↗</a>
+  </div>
+</div>
+
+<div id="tip"></div>
+<div id="err">brain_data.js failed to load. Run <code>python tools/export_brain.py</code>, then serve this folder
+(<code>python -m http.server</code>) or open via GitHub Pages.</div>
+
+<!-- data as a JS global so it loads on file:// AND GitHub Pages (no fetch/CORS) -->
+<script src="brain_data.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module" src="brain.js"></script>
+</body>
+</html>
