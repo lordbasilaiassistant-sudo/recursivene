@@ -199,6 +199,19 @@ gardener who pretends the garden is finished is lying.
     substrate scales (`g_scaling.py` is the movie), NOT a human IQ — on real-task breadth it's at the
     floor. *Evidence: run_logs/g_panel.json, notes/11-g-panel-spec.md.*
 
+24. **[ESTABLISHED] The entity's weakest facet (extrapolation) is a STRUCTURE-DISCOVERY problem, not an
+    approximation one — and the panel found it honestly.** The audited g-panel flagged out-of-family /
+    EXTRAPOLATION as the weakest link (~27); `experiments/extrapolation.py` diagnoses why. Learning
+    sin(5x) on [-1,1] and predicting on [1.0,1.6] (outside support): a FIXED-feature approximator (RFF)
+    scores 0.27, a LEARNED-feature approximator (deep MLP) scores **0.00 (worse — tanh saturates
+    off-support)**, but a learner that DISCOVERS the generative frequency (system-ID: estimate w≈4.99,
+    fit amplitude+phase, extend the law) extrapolates **perfectly (1.00)**. Lesson: generalizing beyond
+    the data is discovering the generating STRUCTURE and extending it — scaling the approximator does NOT
+    cross this wall; finding the law does. This is the honest reason the entity's hardest facet is
+    crossable by a *different kind* of representation (one that finds programs/laws — the SpectralEncoder
+    direction, #12), not a bigger one — and it sharpens "what is missing for general intelligence" from
+    a shrug into a named lever. *Evidence: extrapolation.py, g_panel.py (out_of_family facet).*
+
 ## REMAINING — the experimental program has reached its fixpoint
 
 Every question raised has been answered with code+output, and where an answer REQUIRED building
