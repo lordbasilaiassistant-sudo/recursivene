@@ -19,7 +19,7 @@ from .space import mutate
 # hyperparameters here, exactly as stage 1 discovers better model hyperparameters. These
 # three lines are what stage-2 self-edits rewrite in harness/loop.py.
 MUTATION_SCALE = 0.7000
-MUTATION_RATE = 0.5
+MUTATION_RATE = 0.4500
 POP = 4
 
 

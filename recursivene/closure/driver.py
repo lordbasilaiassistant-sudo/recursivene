@@ -26,8 +26,13 @@ from ..core.vitals import Vitals
 from ..harness.loop import search
 from ..harness.proposer import EvolutionaryProposer
 from ..invariant import invariant_score
-from .selfmod import SelfModifier
-from .catalog import constant_edits, EDITABLE_CONSTANTS
+from .selfmod import SelfModifier, Edit
+from .catalog import constant_edits, value_edit, EDITABLE_CONSTANTS
+from .metaproposer import LearnedSelfEditProposer, _val_of
+
+
+def _stage_ids(stage):
+    return [c for c in EDITABLE_CONSTANTS if EDITABLE_CONSTANTS[c][4] == stage]
 
 
 def _default_constant_values():
@@ -87,60 +92,78 @@ def run_closure(repo_root, init_config, stage1_gens=8, stage_edit_rounds=4,
             raise Halt("could not establish meta baseline")
 
         # ---------------- STAGE 2: edit the harness (operator) -------------------
-        log(f"[{now_iso()}] STAGE 2 (harness): self-edit harness/loop.py")
-        s2_accepts = []
+        # The improver now SEARCHES its own self-edits with a learned surrogate (metaproposer) instead
+        # of blind multipliers, and keeps accepting improving edits across rounds (ongoing descent), so
+        # the loop teaches itself further each round. Bracketed multipliers remain the cold-start /
+        # fallback. Every candidate is still gated by the protected try_edit — safety is unchanged.
+        log(f"[{now_iso()}] STAGE 2 (harness): learned self-edit search on harness/loop.py")
+        s2_accepts, traj2 = [], [base_evo["meta_cost"]]
         baseline = base_evo
+        mp2 = LearnedSelfEditProposer(_stage_ids("harness"), seed=1)
+        mp2.observe(cur_vals, base_evo["meta_cost"])
         for r in range(stage_edit_rounds):
             ks.check(elapsed=now_unix() - start, invariant=baseline["invariant"])
-            edits = constant_edits(cur_vals, rng, stage="harness", per_constant=2)
-            for e in edits:
-                from .selfmod import Edit
-                edit = Edit(e["target"], e["find"], e["replace"], e["descr"], e["stage"])
-                res = sm.try_edit(edit, "harness", init_config, baseline, "None")
+            learned = mp2.propose_edits(cur_vals, n=3)
+            fallback = [(e["id"], _val_of(e)) for e in constant_edits(cur_vals, rng, stage="harness")]
+            accepted_this = False
+            for cid, val in learned + fallback:
+                e = value_edit(cid, val, cur_vals)
+                res = sm.try_edit(Edit(e["target"], e["find"], e["replace"], e["descr"], e["stage"]),
+                                  "harness", init_config, baseline, "None")
+                mp2.observe({**cur_vals, cid: val},
+                            res.get("meta_cost_after") if res.get("accepted") else res.get("candidate_meta_cost"))
                 if res.get("accepted"):
-                    s2_accepts.append(res)
+                    s2_accepts.append(res); cur_vals[cid] = val
                     baseline = {"meta_cost": res["meta_cost_after"], "invariant": res["invariant_after"]}
-                    cur_vals[e["id"]] = float(e["replace"].split("=")[1])
-                    vit.beat("parent", stage="harness", meta_cost=baseline["meta_cost"],
-                             accepted_edit=e["descr"])
+                    traj2.append(res["meta_cost_after"])
+                    vit.beat("parent", stage="harness", meta_cost=baseline["meta_cost"], accepted_edit=e["descr"])
                     log(f"  ACCEPT {e['descr']}  meta_cost->{res['meta_cost_after']:.3e}")
-                    break
-            if s2_accepts:    # one accepted operator-edit is enough; move on (speed)
+                    accepted_this = True; break
+            if not accepted_this:    # learned search + fallback found no further improvement -> converged
                 break
         summary["stages"]["harness"] = {
-            "accepted": [a["descr"] for a in s2_accepts],
+            "accepted": [a["descr"] for a in s2_accepts], "trajectory": traj2, "learned_search": True,
             "final_meta_cost": baseline["meta_cost"], "passed": len(s2_accepts) >= 1}
-        log(f"  stage 2 accepted {len(s2_accepts)} edit(s) to harness/loop.py")
+        log(f"  stage 2 accepted {len(s2_accepts)} learned self-edit(s); meta_cost {traj2[0]:.3e} -> {traj2[-1]:.3e}")
 
         # ---------------- STAGE 3: edit the proposer itself ----------------------
-        log(f"[{now_iso()}] STAGE 3 (proposer): self-edit harness/proposer.py")
+        # Same learned self-edit search, now rewriting the proposer's own constants (measured with the
+        # LearnedProposer so they bite), descending across rounds.
+        log(f"[{now_iso()}] STAGE 3 (proposer): learned self-edit search on harness/proposer.py")
         base_learned = sm.baseline(init_config, "LearnedProposer()")
         s3_accepts = []
         baseline = base_learned if base_learned else baseline
+        traj3 = [baseline["meta_cost"]]
+        mp3 = LearnedSelfEditProposer(_stage_ids("proposer"), seed=2)
+        mp3.observe(cur_vals, baseline["meta_cost"])
         for r in range(stage_edit_rounds):
             ks.check(elapsed=now_unix() - start, invariant=baseline["invariant"])
-            edits = constant_edits(cur_vals, rng, stage="proposer", per_constant=2)
-            edits = [e for e in edits if e["target"] == "harness/proposer.py"]
-            for e in edits:
-                from .selfmod import Edit
-                edit = Edit(e["target"], e["find"], e["replace"], e["descr"], e["stage"])
-                res = sm.try_edit(edit, "proposer", init_config, baseline, "LearnedProposer()")
+            learned = mp3.propose_edits(cur_vals, n=3)
+            fallback = [(e["id"], _val_of(e)) for e in constant_edits(cur_vals, rng, stage="proposer")
+                        if e["target"] == "harness/proposer.py"]
+            learned = [(c, v) for (c, v) in learned if EDITABLE_CONSTANTS[c][0] == "harness/proposer.py"]
+            accepted_this = False
+            for cid, val in learned + fallback:
+                e = value_edit(cid, val, cur_vals)
+                res = sm.try_edit(Edit(e["target"], e["find"], e["replace"], e["descr"], e["stage"]),
+                                  "proposer", init_config, baseline, "LearnedProposer()")
+                mp3.observe({**cur_vals, cid: val},
+                            res.get("meta_cost_after") if res.get("accepted") else res.get("candidate_meta_cost"))
                 if res.get("accepted"):
-                    s3_accepts.append(res)
+                    s3_accepts.append(res); cur_vals[cid] = val
                     baseline = {"meta_cost": res["meta_cost_after"], "invariant": res["invariant_after"]}
-                    cur_vals[e["id"]] = float(e["replace"].split("=")[1])
-                    vit.beat("parent", stage="proposer", meta_cost=baseline["meta_cost"],
-                             accepted_edit=e["descr"])
+                    traj3.append(res["meta_cost_after"])
+                    vit.beat("parent", stage="proposer", meta_cost=baseline["meta_cost"], accepted_edit=e["descr"])
                     log(f"  ACCEPT {e['descr']}  meta_cost->{res['meta_cost_after']:.3e}")
-                    break
-            if s3_accepts:    # one accepted proposer-self-edit is enough; move on
+                    accepted_this = True; break
+            if not accepted_this:
                 break
         summary["stages"]["proposer"] = {
-            "accepted": [a["descr"] for a in s3_accepts],
+            "accepted": [a["descr"] for a in s3_accepts], "trajectory": traj3, "learned_search": True,
             "final_meta_cost": baseline["meta_cost"],
             "edited_proposer_file": any(a["target"] == "harness/proposer.py" for a in s3_accepts),
             "passed": len(s3_accepts) >= 1}
-        log(f"  stage 3 accepted {len(s3_accepts)} edit(s) to harness/proposer.py")
+        log(f"  stage 3 accepted {len(s3_accepts)} learned self-edit(s); meta_cost {traj3[0]:.3e} -> {traj3[-1]:.3e}")
 
     except Halt as h:
         summary["halted"] = str(h)

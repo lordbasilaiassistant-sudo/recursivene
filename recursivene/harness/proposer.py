@@ -53,7 +53,7 @@ class LearnedProposer(Proposer):
     mutation once it has a few data points (B3) — and its three constants below are the
     meta-meta self-edit targets for stage 3 (the proposer improving the proposer)."""
 
-    POOL_FACTOR = 8              # mutants oversampled per slot (more = more thorough exploit)
+    POOL_FACTOR = 16
     EXPLORE_FRAC = 0.6000
     SURROGATE_RIDGE = 1.0        # ridge on the surrogate fit
 

@@ -31,6 +31,23 @@ def _fmt(value, kind):
 _MULTIPLIERS = (0.5, 0.7, 1.4, 2.0)
 
 
+def value_edit(cid, value, current_values):
+    """Build ONE edit that sets editable constant `cid` to a specific (continuous) `value`, reusing the
+    same indentation-preserving regex as constant_edits. This is what the LearnedSelfEditProposer emits:
+    arbitrary values predicted to lower the meta-objective, not just the fixed bracket multipliers."""
+    target, name, (lo, hi), kind, stage = EDITABLE_CONSTANTS[cid]
+    val = float(np.clip(value, lo, hi))
+    cur = current_values.get(cid, 0.5 * (lo + hi))
+    new = _fmt(val, kind)
+    return {
+        "id": cid, "target": target, "constant": name,
+        "find": rf"(?m)^([ \t]*){name} = .*$",
+        "replace": rf"\g<1>{name} = {new}",
+        "descr": f"{name}: {_fmt(cur, kind)} -> {new} (learned)",
+        "stage": stage,
+    }
+
+
 def constant_edits(current_values, rng, stage, per_constant=None):
     """Yield candidate Edits for every editable constant whose stage is <= the current
     closure stage. `current_values` maps id -> current numeric value. Deterministic spread

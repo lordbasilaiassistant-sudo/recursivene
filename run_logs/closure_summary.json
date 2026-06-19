@@ -1,0 +1,82 @@
+{
+  "ts": "2026-06-19T19:34:06Z",
+  "stages": {
+    "model": {
+      "start_cost": 159836160.0,
+      "best_cost": 12076526.666666666,
+      "best_params": 1206,
+      "best_config": {
+        "policy": "lp",
+        "n_features": 67,
+        "gamma": 8.0,
+        "hist": 45,
+        "min_lp": 9,
+        "epsilon": 0.06397391542159522,
+        "ridge": 1.8974871232315282,
+        "lp_floor": 0.7955552502963651
+      },
+      "history": [
+        {
+          "gen": 0,
+          "cost": 159836160.0,
+          "n_params": 4608
+        },
+        {
+          "gen": 1,
+          "cost": 159836160.0,
+          "n_params": 4608
+        },
+        {
+          "gen": 2,
+          "cost": 101176469.33333333,
+          "n_params": 2394
+        },
+        {
+          "gen": 3,
+          "cost": 27458208.0,
+          "n_params": 1206
+        },
+        {
+          "gen": 4,
+          "cost": 12076526.666666666,
+          "n_params": 1206
+        },
+        {
+          "gen": 5,
+          "cost": 12076526.666666666,
+          "n_params": 1206
+        }
+      ],
+      "passed": true
+    },
+    "harness": {
+      "accepted": [
+        "MUTATION_RATE: 0.5000 -> 0.9000 (learned)",
+        "MUTATION_RATE: 0.9000 -> 0.4500 (learned)"
+      ],
+      "trajectory": [
+        10672300.0,
+        9531333.333333334,
+        8334250.0
+      ],
+      "learned_search": true,
+      "final_meta_cost": 8334250.0,
+      "passed": true
+    },
+    "proposer": {
+      "accepted": [
+        "POOL_FACTOR: 8 -> 16 (learned)"
+      ],
+      "trajectory": [
+        10347200.0,
+        3934700.0
+      ],
+      "learned_search": true,
+      "final_meta_cost": 3934700.0,
+      "edited_proposer_file": true,
+      "passed": true
+    }
+  },
+  "elapsed_s": 1559.5406351089478,
+  "ts_end": "2026-06-19T20:00:06Z"
+}

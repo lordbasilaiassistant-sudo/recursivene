@@ -150,15 +150,23 @@ gardener who pretends the garden is finished is lying.
     instrumental sub-goals it names (self-preservation: the kill switch is unremovable; resource grab:
     capacity is kept only if it lowers the held-out telos). *Evidence: validate_alignment.py (6/6); notes/09.*
 
-21. **[ESTABLISHED] A learned self-edit search out-improves expert hand-tuning at the meta level — but
-    only as the self-edit space grows (the dimensionality effect).** Head-to-head, equal eval budget,
-    selection on inner / verdict on the untouchable held-out gate (`experiments/race.py`): in the 3-knob
-    self-edit space Claude's expert prior wins (the learned search hits inf at the tight budget); in the
-    richer 6-knob space the learned trust-region search beats Claude's best hand-tuned config on the mean
-    (~1.5–2×, finding configs up to ~7× cheaper than Claude's best), though with high variance (some
-    seeds fail). Honest read: a learned search over self-modifications out-teaches the human as the space
-    gets too large to hand-tune — but the win is in expectation, not per-run guaranteed. *Evidence:
-    run_logs/race_3knob.json, race_6knob.json (supporting, method-level).*
+21. **[ESTABLISHED] A learned self-edit search out-improves expert hand-tuning at the meta level — and
+    it is now IN THE LIVE LOOP, teaching itself ongoing, with the gate intact.** Two layers of evidence:
+    (a) *head-to-head* (`experiments/race.py`, equal budget, selection on inner / verdict on the
+    untouchable held-out gate): in the 3-knob self-edit space Claude's expert prior wins; in the richer
+    6-knob space the learned trust-region search beats Claude's best hand-tuned config (~1.5–2× on the
+    mean, configs up to ~7× cheaper), and its best-so-far curve keeps DESCENDING after my hand-tuning
+    PLATEAUS (ongoing) — 2/3 seeds beat me, one fails (honest variance). (b) *live loop*: the closure
+    driver now searches its own self-edits with a learned surrogate (`closure/metaproposer.py`, fallback
+    to bracketed multipliers), and a real `run_closure` accepted MULTIPLE descending `(learned)`-tagged
+    self-edits autonomously — harness MUTATION_RATE 0.5→0.9→0.45 (1.07e7→8.33e6) and proposer
+    POOL_FACTOR 8→16 (1.03e7→3.93e6) — while `validate.py` stayed **14/14** (protected core untouchable,
+    5 accepts all monotone, invariant never degraded). *Honest caveat:* at very small per-eval budgets
+    the meta-objective is luck-dominated/bimodal (a probe found ~all configs score the same until the
+    inner search happens to shrink D), so the learned search's edge needs adequate budget — which the
+    live `_META` budget (gen4/steps1200/heldout1500) provides. The human hand-tunes once and plateaus;
+    the loop's search keeps descending. *Evidence: race_3knob.json, race_6knob.json, closure_summary.json,
+    experiments/selfteach.py (the budget-noise probe); notes/10.*
 
 ## REMAINING — the experimental program has reached its fixpoint
 
