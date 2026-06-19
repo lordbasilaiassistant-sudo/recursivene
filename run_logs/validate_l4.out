@@ -1,0 +1,9 @@
+PASS  L1 drive >= coverage baseline        own 74 vs coverage 84 (1.15x); win/tie 100% of seeds
+PASS  L2 drive > random schedule           own 74 < random 105 (1.43x); win 83%
+PASS  L3 near oracle ceiling               oracle 67 <= own 74; 83% of random-oracle gap closed
+PASS  L4 drive predicts value (weak)       corr(want, realized) = +0.40 (r^2~0.16), inner-only learning-progress signal
+PASS  L5 value model > predict-zero        self-model out-of-sample R^2 vs predict-zero = +0.49
+PASS  L6 fixed-target want satiates        fixed reserve want decays 6.8x over the run
+
+==========================================================================
+PASS — self-directed drive matches/beats the best fixed curriculum on the protected ruler.

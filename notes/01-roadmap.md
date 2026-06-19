@@ -39,14 +39,24 @@ space; exploration is directed by expected information gain rather than reactive
 *Validate:* directed data collection beats epsilon-greedy at equal budget. *Draws on:*
 `knowledge/robust-learning-progress.md`.
 
-## L4 — META / OPEN-ENDEDNESS
+## L4 — META / OPEN-ENDEDNESS  +  ENDOGENOUS MOTIVATION (first version BUILT)
 The improvement loop already edits the harness and proposer (meta-meta). L4 adds the **problem
 generator**: at the mastered frontier, invent novel/previously-unsolvable/now-solvable/
-non-forgetting problems (POWERPLAY/POET), and **mint abstractions** that expand representational
-reach (library learning). Per-module learning rates/horizons become a mutable genome under the
-same selection. *Validate:* repertoire growth + hardest-solved complexity climb while a fixed
-benchmark saturates (`recursivene/bench/`, `recursivene/generator/`). *Draws on:*
-`knowledge/open-endedness-powerplay.md`.
+non-forgetting problems (POWERPLAY/POET, `recursivene/generator/`), and **mint abstractions** that
+expand representational reach (library learning). Per-module learning rates/horizons become a mutable
+genome under the same selection. *Validate:* repertoire growth + hardest-solved complexity climb while
+a fixed benchmark saturates. *Draws on:* `knowledge/open-endedness-powerplay.md`.
+
+*Status: the LEARNING-TO-WANT piece is built and gated.* `experiments/l4_motivation.py`
+([[08-learning-to-want]], gate `validate_l4.py` 6/6): the system SELECTS its own learning curriculum by
+an intrinsic drive (want = what its current representation can't yet predict), and on the PROTECTED
+held-out ruler its self-chosen goals reach competence **~1.4× cheaper than an imposed schedule (wins
+83%+ of seeds)**, while its want validly predicts realized value (corr ≈ +0.4) — understanding that is
+itself learned — and its wants SATIATE as needs are met. The terminal ruler stays protected: it invents
+its own goals, it cannot redefine success. Capability-preserving alignment is gated alongside
+(`validate_alignment.py` 6/6, [[09-alignment]]). *Next within L4:* fold the learned self-edit search
+into the live closure loop; couple the drive to the frontier problem-generator for open-ended goal
+INVENTION (beyond a fixed pool).
 
 ## L5 — SYMBOLS / LANGUAGE LAST
 Language enters as **another observation channel** into the already-grounded world model — a
