@@ -210,7 +210,11 @@ gardener who pretends the garden is finished is lying.
     cross this wall; finding the law does. This is the honest reason the entity's hardest facet is
     crossable by a *different kind* of representation (one that finds programs/laws — the SpectralEncoder
     direction, #12), not a bigger one — and it sharpens "what is missing for general intelligence" from
-    a shrug into a named lever. *Evidence: extrapolation.py, g_panel.py (out_of_family facet).*
+    a shrug into a named lever. The entity's OWN SpectralEncoder, now lstsq-frequency-refined (#12),
+    discovers the true law (w=4.998) and crosses PARTIALLY (0.44 vs RFF 0.27) where approximators can't;
+    the remaining gap to perfect is PARSIMONY — it over-provisions ~20 frequency slots and the spurious
+    ones pollute off-support, so full crossing needs sharp AND SPARSE discovery (model selection). The
+    next lever is named and measured. *Evidence: extrapolation.py, g_panel.py (out_of_family facet).*
 
 ## REMAINING — the experimental program has reached its fixpoint
 

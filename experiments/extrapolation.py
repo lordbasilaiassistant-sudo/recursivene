@@ -26,6 +26,7 @@ import numpy as np
 
 from _util import REPO_ROOT  # noqa: F401
 from recursivene.deep_encoder import DeepEncoder
+from recursivene.encoder import SpectralEncoder
 
 W_TRUE = 5.0
 EXTRAP = np.linspace(1.0, 1.6, 60)        # outside the [-1,1] training support
@@ -61,15 +62,29 @@ def main():
     pred = np.c_[np.sin(wf * EXTRAP), np.cos(wf * EXTRAP), np.ones_like(EXTRAP)] @ coef
     sid = float(np.mean((pred - te) ** 2))
 
+    # 4) THE ENTITY's own SpectralEncoder (discovers frequencies; lstsq-refined to the true law)
+    enc = SpectralEncoder(n_freqs=20, fmax=20.0, seed=0)
+    for x, y in zip(xtr, ytr_n): enc.observe(x, y)
+    enc.discover()
+    de = enc.dim(); P = np.eye(de); we = np.zeros(de)
+    for x in xtr:
+        f = enc.phi(x); Pp = P @ f; k = Pp / (1 + f @ Pp); we = we + k * (fn(x) - f @ we); P = P - np.outer(k, Pp)
+    spec = float(np.mean((np.array([we @ enc.phi(x) for x in EXTRAP]) - te) ** 2))
+    near = min(enc.freqs, key=lambda f: abs(f - W_TRUE))
+
     print("\nEXTRAPOLATION to [1.0, 1.6] (outside training support); 1.0=perfect, 0=predict-the-mean:\n")
-    print(f"  FIXED features (RFF)        : mse={rff:7.3f}   score={score(rff):.2f}")
-    print(f"  LEARNED features (deep MLP) : mse={mlp:7.3f}   score={score(mlp):.2f}")
-    print(f"  STRUCTURE DISCOVERY (sys-ID): mse={sid:7.4f}   score={score(sid):.2f}   (found w={wf:.3f}, true {W_TRUE})")
-    print("\n" + "=" * 84)
-    print("LESSON: extrapolation is STRUCTURE DISCOVERY, not approximation. Scaling the approximator does")
-    print("NOT cross this wall; discovering the generating law (the frequency) does. The path to the")
-    print("entity's hardest facet is a representation that finds programs/laws (SpectralEncoder, KNOWN #12).")
-    print("=" * 84)
+    print(f"  FIXED features (RFF)         : mse={rff:7.3f}   score={score(rff):.2f}")
+    print(f"  LEARNED features (deep MLP)  : mse={mlp:7.3f}   score={score(mlp):.2f}")
+    print(f"  ENTITY SpectralEncoder       : mse={spec:7.3f}   score={score(spec):.2f}   (refined freq {near:.3f} ~ true {W_TRUE})")
+    print(f"  STRUCTURE DISCOVERY (sys-ID) : mse={sid:7.4f}   score={score(sid):.2f}   (parsimonious: one freq {wf:.3f})")
+    print("\n" + "=" * 86)
+    print("LESSON: extrapolation is STRUCTURE DISCOVERY, not approximation. Scaling the approximator (RFF,")
+    print("MLP) does NOT cross the wall; discovering the generating law does. The entity's SpectralEncoder")
+    print("discovers + (now) lstsq-REFINES the true frequency, so it crosses PARTIALLY where approximators")
+    print("can't -- the remaining gap to perfect (sys-ID) is PARSIMONY: it over-provisions ~20 freq slots,")
+    print("and the spurious ones pollute off-support. Full crossing needs sharp AND sparse discovery")
+    print("(model selection). Named lever, measured -- not a shrug. (KNOWN #12 refinement, #24.)")
+    print("=" * 86)
 
 
 if __name__ == "__main__":

@@ -57,7 +57,28 @@ class SpectralEncoder:
             if len(picked) >= self.n:
                 break
         if picked:
-            self.freqs = np.array(picked)
+            # REFINE each grid-picked frequency by a fine local search (continuous structure ID, not
+            # just the coarse candidate grid). A frequency that is even slightly off drifts in phase as
+            # x grows, which is exactly what kills EXTRAPOLATION (KNOWN #24); sharpening the discovered
+            # law is what lets the encoder EXTEND it beyond the data, not just fit within it.
+            step = (self.fmax - 1.0) / (len(self.candidates) - 1)
+            ones = np.ones_like(X)
+            refined = []
+            for f0 in picked:
+                # Refine by the LEAST-SQUARES RESIDUAL of a [sin,cos,1] fit (orthogonality-corrected),
+                # not the raw periodogram dot-product which is biased on a short window. This is the
+                # system-ID objective that pins the true frequency, so the discovered law EXTENDS beyond
+                # the data (the extrapolation lever, KNOWN #24). Wide window to beat grid-quantization.
+                grid = np.linspace(max(0.2, f0 - 2.5 * step), f0 + 2.5 * step, 121)
+                best_f, best_r = f0, np.inf
+                for f in grid:
+                    A = np.stack([np.sin(f * X), np.cos(f * X), ones], axis=1)
+                    coef, *_ = np.linalg.lstsq(A, Y, rcond=None)
+                    r = float(np.mean((A @ coef - Y) ** 2))
+                    if r < best_r:
+                        best_r, best_f = r, float(f)
+                refined.append(best_f)
+            self.freqs = np.array(refined)
             self.n = len(self.freqs)        # keep the count in sync with the actual array
 
     def phi(self, x):
