@@ -79,6 +79,11 @@ gardener who pretends the garden is finished is lying.
     complexity climbs — so the open-ended race-to-0 (#11's blocker) is reachable. This also answers
     the meta-acquisition question (#B' below): the encoder gets BETTER at acquiring new structure by
     discovering it once and banking it into the representation. *Evidence: encoder.py, l1_test.py.*
+    *(2026-06-19 upgrade): discovered frequencies are now lstsq-REFINED after the coarse peak-pick
+    (orthogonality-corrected, not the biased periodogram), pinning the true law — L1 ends ~118× cheaper
+    (was ~103×). And the encoder now exposes `law()` — a parsimonious BIC-selected subset of the
+    discovered frequencies (the shortest law that fits) — SEPARATE from the rich representation phi,
+    because max-capacity representation and min-description law are different objectives. See #24.*
 
 13. **It learns a genuinely SENSORY field.** Given only random coordinate→intensity samples from a
     2-D image (blobs + gradient + a high-frequency ring), the substrate reconstructs the scene to
@@ -210,11 +215,16 @@ gardener who pretends the garden is finished is lying.
     cross this wall; finding the law does. This is the honest reason the entity's hardest facet is
     crossable by a *different kind* of representation (one that finds programs/laws — the SpectralEncoder
     direction, #12), not a bigger one — and it sharpens "what is missing for general intelligence" from
-    a shrug into a named lever. The entity's OWN SpectralEncoder, now lstsq-frequency-refined (#12),
-    discovers the true law (w=4.998) and crosses PARTIALLY (0.44 vs RFF 0.27) where approximators can't;
-    the remaining gap to perfect is PARSIMONY — it over-provisions ~20 frequency slots and the spurious
-    ones pollute off-support, so full crossing needs sharp AND SPARSE discovery (model selection). The
-    next lever is named and measured. *Evidence: extrapolation.py, g_panel.py (out_of_family facet).*
+    a shrug into a named lever. **RESOLVED (2026-06-19): the entity now CROSSES this wall.** Its
+    SpectralEncoder, lstsq-refined (#12), discovers the true law (w=4.998); using the rich representation
+    phi the over-capacity pollutes off-support (0.44), but extrapolating with the parsimonious `enc.law()`
+    (BIC-selected few frequencies — the shortest law that fits) it reaches **score 1.00 (mse 0.000),
+    matching pure system-ID**, while the rich phi still flattens L1 (~118×). The architectural lesson:
+    representation (max capacity, for in-support fitting) and law-extraction (min description/Occam, for
+    extending beyond data) are DIFFERENT objectives — and intelligence needs BOTH; collapsing them into
+    one phi fails one or the other. This is a real step from function-approximation toward program/law
+    induction (compression = Universal-AI's core of intelligence). *Evidence: extrapolation.py (FULL phi
+    0.44 vs LAW 1.00), encoder.law(), l1_test.py (118× preserved).*
 
 ## REMAINING — the experimental program has reached its fixpoint
 

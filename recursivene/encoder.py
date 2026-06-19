@@ -14,14 +14,19 @@ This is the JEPA move in miniature: a shared learned encoder + a cheap per-task 
 encoder trained self-supervised on the agent's own stream.
 """
 
+import math
+
 import numpy as np
 
 
 class SpectralEncoder:
-    def __init__(self, n_freqs=20, fmax=40.0, rff_dim=64, gamma=8.0, buffer=800, min_sep=1.0, seed=0):
+    def __init__(self, n_freqs=20, fmax=40.0, rff_dim=64, gamma=8.0, buffer=800, min_sep=1.0,
+                 bic_mult=1.0, seed=0):
         rng = np.random.default_rng(seed)
         self.n = n_freqs
         self.min_sep = min_sep
+        self.bic_mult = float(bic_mult)   # parsimony strength: higher prunes harder (extrapolation),
+        #                                   lower keeps more components (rich-world capacity)
         self.freqs = rng.uniform(1.0, 6.0, n_freqs)        # start LOW / under-provisioned
         self.fmax = float(fmax)
         self.candidates = np.linspace(1.0, fmax, 240)
@@ -78,8 +83,42 @@ class SpectralEncoder:
                     if r < best_r:
                         best_r, best_f = r, float(f)
                 refined.append(best_f)
+            # Keep the FULL refined set as the representation: over-capacity helps in-support fitting of
+            # rich multi-frequency worlds (the L1 cost-to-complexity flattening relies on it). PARSIMONY
+            # is a SEPARATE objective (Occam/MDL), exposed by law() below for EXTRAPOLATION — because
+            # representation (max capacity) and law-extraction (min description) genuinely trade off, so
+            # the entity keeps both rather than collapsing them into one phi.
             self.freqs = np.array(refined)
-            self.n = len(self.freqs)        # keep the count in sync with the actual array
+            self.n = len(self.freqs)        # keep the count in sync with the actual array (derived)
+
+    def law(self):
+        """The parsimonious LAW: the FEW frequencies (a sparse subset of the discovered ones) that
+        genuinely explain the buffer, by BIC forward selection — each added (sin,cos) pair must lower
+        N*ln(RSS) by more than its description cost ~bic_mult*ln(N). This is the MDL/Occam reading of the
+        data: the shortest law that fits, which is what EXTENDS beyond the data (KNOWN #24 — extrapolation
+        is structure discovery, and needs sharp AND SPARSE). Representation (phi) stays rich; the law is
+        what you extrapolate with. Returns an array of frequencies (>=1)."""
+        if len(self.bx) < 60 or len(self.freqs) == 0:
+            return np.array(self.freqs)
+        X = np.asarray(self.bx); Y = np.asarray(self.by); Y = Y - Y.mean(); ones = np.ones_like(X)
+        N = len(Y)
+        def rss(freqs):
+            cols = []
+            for f in freqs:
+                cols += [np.sin(f * X), np.cos(f * X)]
+            A = np.stack(cols + [ones], axis=1)
+            coef, *_ = np.linalg.lstsq(A, Y, rcond=None)
+            return float(np.mean((A @ coef - Y) ** 2))
+        cand = list(dict.fromkeys(float(f) for f in self.freqs))
+        active, cur = [], float(np.mean(Y ** 2)) + 1e-12
+        pen = self.bic_mult * math.log(max(N, 2))
+        while cand and len(active) < len(self.freqs):
+            r, f = min(((rss(active + [f]), f) for f in cand), key=lambda t: t[0])
+            if N * math.log(max(r, 1e-12)) + pen < N * math.log(cur):
+                active.append(f); cand.remove(f); cur = r
+            else:
+                break
+        return np.array(active if active else [float(self.freqs[0])])
 
     def phi(self, x):
         disc = np.concatenate([np.sin(self.freqs * x), np.cos(self.freqs * x)])
