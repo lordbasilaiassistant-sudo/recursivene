@@ -297,8 +297,15 @@ gardener who pretends the garden is finished is lying.
     0.04) — so perception→fit→structure-discovery→calibrated-understanding now composes in ONE system, and
     its world was made varied-complexity (simple AND rich unknowns) so the distinction is real (the
     synthesis gate still PASSES 8/8). Honest scope: it understands only the tractable fraction; calibration
-    is strong-not-perfect (an occasional confident miss). `language`/`imagination`/`closure` remain siloed —
-    the next integration steps. *Evidence: the audit (run wf_4f40c46a-402); diffs to induction.py /
+    is strong-not-perfect (an occasional confident miss). (f) **The NEXT de-silo (language: naming/recognizing
+    understood laws) was PROBED and DECLINED** — the anti-novelty discipline working: a 20-line probe showed
+    full-law recurrence is ~1/24 over a life (random k-subset targets almost never repeat), and primitive-level
+    naming is blocked by the inconsistent-extraction limit (#26). A naming layer would recognize ~nothing —
+    it would *look* like "integrated language" while adding no real capability, so it was NOT built. The real
+    path (reliable primitive extraction → a primitive lexicon → compositional language on discovered structure)
+    needs #26 solved and more scale; `imagination` needs a control/planning world (architectural, not a
+    bolt-on) and `closure` is already partly live as race-to-0. *Evidence: the audit (run wf_4f40c46a-402);
+    recurrence probe; diffs to induction.py /
     g_panel.py / program_induction.py / compounding.py / entity.py; validate_entity.py 8/8.*
 
 ## REMAINING — the experimental program has reached its fixpoint
