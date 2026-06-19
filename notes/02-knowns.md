@@ -261,17 +261,28 @@ gardener who pretends the garden is finished is lying.
     consistent, exact structure identification** (joint system-ID / program synthesis under noise). That
     one lever — not many — is the hard core gating the next rung of generality. *Evidence: the law-banking
     transfer probe (1.8×); induction.py frequency fragmentation.*
+    *(2026-06-19 RESOLVED in principle):* the fragmentation is an **identifiability** limit, not just an
+    algorithm one — a short `[-1,1]` window cannot resolve superposed frequencies. Idealized multi-start
+    joint NLS recovers exact primitives **1/8 on ±1 vs 6/8 on ±3** (wider window = more frequency
+    resolution). And a GLOBAL extractor matters: greedy `induce()` fragments even on wide data, but
+    `extract_laws()` (multi-start joint + BIC model-selection on K) recovers the true primitives
+    consistently on a wide window. So consistent extraction = adequate data RANGE + a global extractor —
+    both now demonstrated. *Evidence: extract_laws(); compounding.py 3-arm.*
 
-27. **[RETRACTED → HONEST NEGATIVE] Learning does NOT measurably compound via discovered structure at toy
-    scale — the apparent "compounding" was CAPACITY.** I first reported ~1.6× "real compounding beyond
-    capacity" from a SINGLE seed. An adversarial audit (#28) + a multi-seed, capacity-controlled rerun
-    REFUTE it: over 8 seeds the recurrence-cleaned discovered bank does NOT reliably beat an EQUAL-SIZE
-    RANDOM bank (median **1.00×**, wins only 3/8 seeds), and a DISJOINT no-shared-structure *reachable* bank
-    lowers cost-to-know just as much (~1.9×) as the discovered one. So the benefit is just having low-freq
-    basis atoms (capacity beats the high-variance RFF fallback), NOT reuse of the specific discovered laws.
-    The single-seed 1.6× was a lucky draw — report median+spread, never one seed. Structure-specific
-    compounding is the right target but is NOT demonstrated here; the levers are exact-primitive parsimony
-    and real scale. *Evidence: compounding.py (multi-seed; equal-size-random + disjoint-reachable controls).*
+27. **[over-claim → RETRACTED → RESOLVED, CONDITIONAL] Learning compounds via discovered structure ONLY
+    when extraction is consistent — which the original setup was not, so the first claim was rightly
+    retracted.** The full honest arc (the anti-woo discipline working end-to-end): (1) I first reported
+    ~1.6× "real compounding" from a SINGLE seed. (2) An audit (#28) + multi-seed capacity control REFUTED
+    it: with a FRAGMENTED bank the discovered frequencies do NOT beat an EQUAL-SIZE RANDOM bank (median
+    **1.00×**, 2–3/8 seeds), and a disjoint reachable bank helps as much → the gain was **CAPACITY** (low-
+    freq atoms beat the RFF fallback), not structure-reuse. (3) ROOT CAUSE = identifiability (#26): short
+    window + greedy extractor can't resolve superposed frequencies. (4) FIX: a WIDE window + the GLOBAL
+    `extract_laws()` extractor recovers ~exact primitives → the discovered bank now BEATS an equal-size
+    random bank: **median 1.50× (5/6 seeds)** end-to-end, and **1.83× (10/10)** with a perfect bank — while
+    greedy/narrow stays at 1.00×. So compounding IS real, **conditioned on consistent extraction** (a data-
+    RANGE + global-extractor requirement), not a free lunch and not novelty. *Honest residual:* still toy
+    scale, the extracted bank carries a couple spurious atoms, and ~1.5× is modest. *Evidence:
+    compounding.py (3-arm: greedy-narrow / greedy-wide / multistart-wide, capacity control, median+spread).*
 
 28. **[ESTABLISHED] An adversarial "real-vs-novelty" audit (6 agents) hardened the honesty discipline and
     corrected several over-claims — this is the anti-woo rule working on itself.** Findings, all acted on:

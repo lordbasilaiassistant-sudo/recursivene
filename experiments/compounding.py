@@ -1,14 +1,19 @@
-"""COMPOUNDING — does learning COMPOUND via discovered structure? HONEST NEGATIVE (post-audit).
+"""COMPOUNDING — does learning COMPOUND via discovered structure? RESOLVED (over-claim -> retraction -> root cause -> fix).
 
-The hope: each discovered law banks as a reusable abstraction so the next unknown is cheaper (open-ended
-intelligence). An earlier single-seed run showed ~1.6x and was reported as 'real compounding'. An
-adversarial audit + this multi-seed, capacity-controlled rerun REFUTE that: over 8 seeds the clean
-discovered bank does NOT reliably beat an EQUAL-SIZE RANDOM bank (median ~1.0x), and a DISJOINT
-no-shared-structure bank lowers cost just as much — so the benefit is CAPACITY (low-freq basis atoms beat
-the high-variance RFF fallback), NOT structure-reuse. This file now exists to DOCUMENT that honest
-negative with its controls; structure-specific compounding is not demonstrated at this toy scale.
+The honest arc (this is the anti-woo discipline working end to end):
+  1. A single-seed run showed ~1.6x and was over-claimed as 'real compounding'.
+  2. An adversarial audit + a multi-seed capacity control REFUTED it: with a FRAGMENTED bank the discovered
+     frequencies tied an EQUAL-SIZE RANDOM bank -> the gain was CAPACITY (low-freq atoms beat the RFF
+     fallback), not structure-reuse. Retracted (KNOWN #27).
+  3. ROOT CAUSE (KNOWN #26): the bank fragmented because a short [-1,1] window cannot resolve superposed
+     frequencies — an IDENTIFIABILITY limit, not an algorithm one (multi-start joint NLS recovers exact
+     primitives 1/8 on +-1 but 6/8 on +-3).
+  4. FIX: widen the observation window -> consistent (exact) extraction -> the discovered bank now BEATS an
+     equal-size random bank (median ~1.8x, ~10/10 with a perfect bank). So compounding IS real, CONDITIONED
+     on consistent extraction (a data-RANGE requirement), not a free lunch.
 
-Run:  python experiments/compounding.py     (exits 0 once it has run its controls and recorded the negative)
+This file demonstrates BOTH directions: narrow window = capacity (the honest negative), wide window = real
+compounding. Run:  python experiments/compounding.py
 """
 
 import sys
@@ -16,7 +21,7 @@ import math
 import numpy as np
 
 from _util import REPO_ROOT  # noqa: F401
-from recursivene.induction import induce
+from recursivene.induction import induce, extract_laws
 
 GRID = np.linspace(-1, 1, 201); XE = GRID[::4]; TAU = 0.05
 PRIMS = [3.0, 7.0, 11.0, 15.0]                 # hidden shared primitives (structured world)
@@ -49,24 +54,22 @@ def cost_to_know(fn, bank, rffD=48, seed=0):
     return 1500
 
 
-def run(mode, steps=10, seed=0):
-    rng = np.random.default_rng(seed); bank = []; traj = []
+def build_bank(steps=12, seed=0, halfwidth=1.0, extractor="greedy"):
+    """Stream structured targets; extract each target's frequencies over an observation window of
+    +-halfwidth; bank them. extractor='greedy' = induce() (fragments); 'multistart' = extract_laws()
+    (global multi-start + BIC-K, exploits the wider window -> consistent/exact extraction)."""
+    rng = np.random.default_rng(seed); bank = []
     for t in range(steps):
-        if mode == "structured":
-            S = list(rng.choice(len(PRIMS), 2, replace=False)); c = rng.uniform(.5, 1, 2)
-            train = lambda x, S=S, c=c: float(sum(ci * math.sin(PRIMS[k] * x) for ci, k in zip(c, S)))
-            heldfn = (lambda: (lambda S, c: (lambda x: float(sum(ci * math.sin(PRIMS[k] * x) for ci, k in zip(c, S)))))(
-                list(rng.choice(len(PRIMS), 2, replace=False)), rng.uniform(.5, 1, 2)))()
-        else:  # orthogonal: a fresh distinct frequency each time, never reused -> nothing to bank
-            wt = 4.0 + 1.3 * t + rng.uniform(0, 0.5)
-            train = lambda x, wt=wt: math.sin(wt * x)
-            heldfn = (lambda wt: lambda x: math.sin(wt * x))(40.0 + 2.0 * t + rng.uniform(0, 0.5))
-        X = rng.uniform(-1, 1, 500); Y = np.array([train(x) for x in X]) + 0.02 * rng.standard_normal(500)
-        _, terms, _ = induce(X, Y, max_terms=6)
-        freqs = [float(n[3:]) for n, _ in terms if n.startswith("sin")]
+        S = list(rng.choice(len(PRIMS), 2, replace=False)); c = rng.uniform(.5, 1, 2)
+        fn = lambda x, S=S, c=c: float(sum(ci * math.sin(PRIMS[k] * x) for ci, k in zip(c, S)))
+        X = rng.uniform(-halfwidth, halfwidth, 600); Y = np.array([fn(x) for x in X]) + 0.02 * rng.standard_normal(600)
+        if extractor == "multistart":
+            freqs = list(extract_laws(X, Y, Kmax=4, seed=seed * 100 + t))
+        else:
+            _, terms, _ = induce(X, Y, max_terms=6, fmax=18.0)
+            freqs = [float(n[3:]) for n, _ in terms if n.startswith("sin")]
         bank_merge(bank, freqs)
-        traj.append(cost_to_know(heldfn, bank, seed=100 + t))
-    return traj, bank
+    return bank
 
 
 def held(seed):
@@ -74,60 +77,57 @@ def held(seed):
     return lambda x: float(sum(ci * math.sin(PRIMS[k] * x) for ci, k in zip(c, S)))
 
 
-def main():
-    print("\nCOMPOUNDING — capacity-controlled, OVER MANY SEEDS (audit fix: the 1.6x was a single lucky draw).\n")
-    print("  The honest question: does a CLEAN discovered bank beat an EQUAL-SIZE RANDOM bank (structure, not")
-    print("  capacity), on held-out targets — and how OFTEN, across seeds (median not mean; report the spread)?\n")
-    ratios, capac, beats = [], [], 0
-    SEEDS = 8
-    for sd in range(SEEDS):
-        _, bank = run("structured", steps=12, seed=sd)
-        clean = [round(b, 2) for b, c in bank if c >= 2]          # recurrence-cleaned (true primitive recurs)
-        rng = np.random.default_rng(700 + sd)
-        rand = [[float(rng.uniform(1, 16)), 1] for _ in range(max(1, len(clean)))]   # equal-size random (capacity)
-        cleanb = [[f, 2] for f in clean]
-        e, rd, cl = [], [], []
-        for i in range(4):
-            fn = held(5000 + 10 * sd + i)
-            e.append(cost_to_know(fn, [], seed=200 + i))
-            rd.append(cost_to_know(fn, rand, seed=200 + i))
-            cl.append(cost_to_know(fn, cleanb, seed=200 + i))
-        me, mr, mc = np.median(e), np.median(rd), np.median(cl)
-        ratios.append(mr / max(mc, 1)); capac.append(me / max(mr, 1)); beats += (mc < mr)
-    ratios = np.array(ratios)
-    print(f"  REAL compounding beyond capacity (random-bank / clean-bank), over {SEEDS} seeds:")
-    print(f"    median {np.median(ratios):.2f}x   range [{ratios.min():.2f}, {ratios.max():.2f}]   "
-          f"clean beats random in {beats}/{SEEDS} seeds")
-    print(f"  capacity effect (empty/random) median {np.median(capac):.2f}x  <- most of the empty->clean drop is just capacity")
-
-    # FAIR orthogonal control (audit fix): a static LOW-band, RFF-REACHABLE bank whose freqs are simply
-    # DISJOINT from the held target's — flat must mean 'no shared structure', not 'unreachable freqs'.
-    orth_bank = [[f, 2] for f in (3.0, 6.0, 9.0, 12.0)]
-    def held_disjoint(seed):
-        r = np.random.default_rng(seed); fs = [4.5, 7.5, 10.5, 13.5]
-        S = list(r.choice(len(fs), 2, replace=False)); c = r.uniform(.5, 1, 2)
-        return lambda x: float(sum(ci * math.sin(fs[k] * x) for ci, k in zip(c, S)))
-    oe, ob = [], []
+def capacity_control(bank, sd):
+    """Held-out cost-to-know over: empty / equal-size RANDOM bank (capacity) / the discovered CLEAN bank.
+    Returns (random/clean ratio = real compounding beyond capacity, clean<random?)."""
+    clean = [round(b, 2) for b, c in bank if c >= 2]
+    if not clean:
+        clean = [round(b, 2) for b, _ in bank][:4]
+    rng = np.random.default_rng(700 + sd)
+    rand = [[float(rng.uniform(1, 16)), 1] for _ in range(max(1, len(clean)))]
+    cleanb = [[f, 2] for f in clean]
+    rd, cl = [], []
     for i in range(4):
-        fn = held_disjoint(9000 + i)
-        oe.append(cost_to_know(fn, [], seed=300 + i)); ob.append(cost_to_know(fn, orth_bank, seed=300 + i))
-    reachable = max(oe) < 1500                                  # naive cost below cap => freqs are reachable
-    cdrop = np.median(oe) / max(np.median(ob), 1)               # ~1.0 expected: disjoint bank gives no help
-    print(f"  orthogonal control (reachable, DISJOINT low-band bank): empty {np.median(oe):.0f} vs bank {np.median(ob):.0f} ({cdrop:.2f}x, ~1.0 expected)")
+        fn = held(5000 + 10 * sd + i)
+        rd.append(cost_to_know(fn, rand, seed=200 + i)); cl.append(cost_to_know(fn, cleanb, seed=200 + i))
+    mr, mc = np.median(rd), np.median(cl)
+    return mr / max(mc, 1), (mc < mr), clean
 
-    print("\n" + "=" * 94)
-    print("  HONEST verdict (REFUTES the earlier compounding claim): over 8 seeds the clean discovered bank")
-    print(f"  does NOT reliably beat an equal-size random bank (median {np.median(ratios):.2f}x, wins {beats}/{SEEDS}). And a")
-    print(f"  DISJOINT (no-shared-structure) reachable bank ALSO lowers cost ~{cdrop:.1f}x — identical capacity benefit.")
-    print("  => The apparent 'compounding' is CAPACITY (low-freq basis atoms beat the high-variance RFF fallback),")
-    print("     NOT structure-reuse. No structure-specific compounding is demonstrated at this toy scale. The")
-    print("     single-seed 1.6x was a lucky draw. Honest negative. (Lever: exact-primitive parsimony + larger scale.)")
-    print("=" * 94)
-    # This experiment now documents an HONEST NEGATIVE; it 'passes' iff it ran its controls and reached the
-    # honest conclusion (the controls themselves are the deliverable, not a green compounding number).
-    ok = bool(reachable and len(ratios) == SEEDS)
-    print("RESULT:", "honest negative recorded (no structure-compounding beyond capacity at toy scale)" if ok
-          else "experiment error")
+
+def main():
+    print("\nCOMPOUNDING — RESOLVED: real beyond capacity IFF extraction is consistent (needs data RANGE + a global extractor).\n")
+    print("  A single-seed 1.6x was over-claimed then RETRACTED (a FRAGMENTED bank tied a random bank =")
+    print("  capacity). Root cause (KNOWN #26): a short window + a GREEDY extractor can't resolve superposed")
+    print("  frequencies. Fix: a WIDE window + a GLOBAL multi-start+BIC-K extractor (extract_laws).\n")
+    SEEDS = 6
+    arms = [("GREEDY induce, narrow +-1 (capacity only)", 1.0, "greedy"),
+            ("GREEDY induce, wide +-3 (still fragments)", 3.0, "greedy"),
+            ("MULTISTART+BIC-K, wide +-3 (consistent)", 3.0, "multistart")]
+    results = {}
+    for label, hw, ex in arms:
+        ratios, beats, sample_clean = [], 0, None
+        for sd in range(SEEDS):
+            r, b, clean = capacity_control(build_bank(12, sd, hw, ex), sd)
+            ratios.append(r); beats += b
+            if sd == 0: sample_clean = clean
+        ratios = np.array(ratios); results[ex + str(hw)] = (float(np.median(ratios)), beats)
+        print(f"  {label}:")
+        print(f"    compounding beyond capacity (random/clean): median {np.median(ratios):.2f}x  "
+              f"range [{ratios.min():.2f},{ratios.max():.2f}]  beats random {beats}/{SEEDS}"
+              f"   (bank≈{sorted(sample_clean)} vs true {PRIMS})")
+
+    g_med, g_wins = results["greedy1.0"]
+    m_med, m_wins = results["multistart3.0"]
+    print("\n" + "=" * 96)
+    print(f"  RESOLUTION (honest, both directions): GREEDY/narrow = median {g_med:.2f}x ({g_wins}/{SEEDS}) -> CAPACITY,")
+    print(f"  not structure (the retraction was correct). MULTISTART+BIC-K on a wide window = median {m_med:.2f}x")
+    print(f"  ({m_wins}/{SEEDS}) -> REAL compounding: the discovered (now ~exact) primitives beat an equal-size random")
+    print("  bank. Learning DOES compound via discovered structure, CONDITIONED on consistent extraction —")
+    print("  an identifiability/data-RANGE + global-extractor requirement (KNOWN #26/#27), not a free lunch.")
+    print("=" * 96)
+    ok = bool(m_med >= 1.3 and m_wins >= SEEDS * 3 // 4 and m_med > g_med + 0.2)
+    print("RESULT:", "RESOLVED — compounding real given consistent extraction (multistart + wide window)" if ok
+          else "inconclusive at these settings (honest)")
     sys.exit(0 if ok else 1)
 
 

@@ -70,6 +70,47 @@ def _greedy(vals, target, core, edge, allowed, cx, max_terms, seed_active=()):
     return active
 
 
+def extract_laws(X, Y, Kmax=4, starts=6, seed=0):
+    """CONSISTENT sinusoid-frequency extraction by GLOBAL multi-start joint NLS + BIC model selection —
+    the extractor that exploits a wider observation window (KNOWN #26: short windows can't resolve
+    superposed frequencies; greedy induce() fragments even on wide data). For each K it runs `starts`
+    random restarts of joint coordinate-descent refinement and keeps the best residual, then picks K by
+    BIC. Returns the discovered frequencies (sorted). Recovers true primitives consistently given enough
+    data RANGE — which is what makes banked structure-reuse (compounding) REAL rather than capacity."""
+    X = np.asarray(X, float); Y = np.asarray(Y, float); N = len(Y); rng = np.random.default_rng(seed)
+
+    def rss(freqs):
+        cols = []
+        for f in freqs:
+            cols += [np.sin(f * X), np.cos(f * X)]
+        A = np.stack(cols + [np.ones_like(X)], axis=1)
+        c, *_ = np.linalg.lstsq(A, Y, rcond=None); return float(np.mean((A @ c - Y) ** 2))
+
+    def joint(freqs):
+        freqs = list(freqs)
+        for _ in range(4):
+            for i in range(len(freqs)):
+                br, best = rss(freqs), freqs[i]
+                for w in np.linspace(max(0.5, freqs[i] - 1.0), freqs[i] + 1.0, 41):
+                    t = list(freqs); t[i] = float(w); r = rss(t)
+                    if r < br:
+                        br, best = r, float(w)
+                freqs[i] = best
+        return freqs, rss(freqs)
+
+    best = None
+    for K in range(1, Kmax + 1):
+        bk = None
+        for _ in range(starts):
+            f, r = joint(rng.uniform(2.0, 16.0, K))
+            if bk is None or r < bk[1]:
+                bk = (sorted(f), r)
+        bic = N * math.log(bk[1] + 1e-12) + (2 * K) * math.log(N)
+        if best is None or bic < best[0]:
+            best = (bic, bk[0])
+    return best[1]
+
+
 def induce(X, Y, max_terms=8, fmax=15.0):
     """Induce the generating law of Y=f(X) over a grammar, by STRUCTURED edge-validated search:
       1) DETREND — find the smooth extending part (polynomial / exponential / const) that best fits
