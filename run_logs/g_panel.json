@@ -1,0 +1,40 @@
+{
+  "facets": {
+    "sample_efficiency": {
+      "raw": 90.0,
+      "score": 40.79900782463986,
+      "detail": "~90 samples to tau (held-out scenes)"
+    },
+    "transfer/abstraction": {
+      "raw": 2.0588235294117645,
+      "score": 34.727339189820896,
+      "detail": "new unknowns 2.1x cheaper with banked structure"
+    },
+    "grounded_language": {
+      "raw": 40,
+      "score": 31.999999999999996,
+      "detail": "first communication in 40 pairs, production 100%"
+    },
+    "compositional_generalization": {
+      "raw": 1.0,
+      "score": 100.0,
+      "detail": "zero-shot name UNSEEN combos 100% (chance 7%)"
+    },
+    "self_improvement": {
+      "raw": 6.818585932497942,
+      "score": 92.31575260011792,
+      "detail": "learned self-edit search 6.8x better than my hand-tuning"
+    },
+    "generalization_gap": {
+      "raw": 1.4670406680863035,
+      "score": 91.67789234189638,
+      "detail": "held-out/train error ratio 1.47 (1.0 = no overfit)"
+    },
+    "dimension_reach": {
+      "raw": 2,
+      "score": 50.0,
+      "detail": "fixed features reach d=2 (walls beyond; learned reps cross it, KNOWN #15)"
+    }
+  },
+  "g_score": 63.074284565210725
+}

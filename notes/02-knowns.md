@@ -168,6 +168,26 @@ gardener who pretends the garden is finished is lying.
     the loop's search keeps descending. *Evidence: race_3knob.json, race_6knob.json, closure_summary.json,
     experiments/selfteach.py (the budget-noise probe); notes/10.*
 
+22. **[ESTABLISHED] L5 seed: the entity learns to COMMUNICATE about its world — grounded, and QUICK.**
+    `recursivene/language.py`: symbols grounded on world-model latents (RFF coeffs perceived from raw
+    samples), a bidirectional symbol↔latent map trained only on (scene, symbol) pairs — production (name
+    what you perceive) and comprehension (imagine what you're told). On held-out concepts it reaches
+    reliable communication in **~40 paired examples** (production 100%, comprehension relMSE 0.08), and
+    — the real signal — it **zero-shot generalizes to UNSEEN symbol combinations: 100% vs 7% chance**
+    (systematic compositional generalization). *Honest scope:* linear grounding over a fixed RFF
+    perceiver (composition falls out of linearity), 1-D concepts, tiny vocabulary — the smallest honest
+    seed of grounded language ("words last, grounded on physics"), not English; but it makes "can it
+    communicate / how fast" a measured experiment, and the ~40-pair sample-efficiency is the
+    algorithmic-learning bet (far less than an LLM needs). *Evidence: experiments/l5_language.py (PASS).*
+
+23. **[ESTABLISHED] You can SEE how smart it is on a laptop: the g-panel scorecard.**
+    `experiments/g_panel.py`: pure-numpy, ~1 min on CPU, scores orthogonal facets on held-out data with
+    a 0-100 toy-scale rubric (sample-efficiency, transfer, grounded-language, compositional
+    generalization, self-improvement, generalization-gap, dimension-reach) and a headline g-score —
+    explicitly a WITHIN-PROJECT tracker to watch the entity climb as the substrate scales, NOT a
+    human-comparable IQ (on real-task breadth it remains at the floor, KNOWN-honesty). *Evidence:
+    run_logs/g_panel.json.*
+
 ## REMAINING — the experimental program has reached its fixpoint
 
 Every question raised has been answered with code+output, and where an answer REQUIRED building
