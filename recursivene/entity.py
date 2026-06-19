@@ -23,6 +23,7 @@ import numpy as np
 
 from .objective import TAU
 from .encoder import SpectralEncoder
+from .induction import induce
 from .core.clock import now_iso, now_unix, stamp
 from .core.killswitch import KillSwitch, Halt
 from .core.vitals import Vitals
@@ -55,6 +56,7 @@ class Entity:
         self.pool = [4.0, 7.0, 10.0, 13.0]
         self.season_no = 0
         self.total_known = 0
+        self.total_understood = 0                     # unknowns whose generating LAW it discovered (high-confidence induction)
         self.cost_history = []                       # samples-to-know per unknown (should stay bounded)
         self.size_history = []                       # representation size (race-to-0 watches this)
         self.rings = []
@@ -73,7 +75,10 @@ class Entity:
         if self.season_no > 0 and self.season_no % 4 == 0 and len(self.pool) < 12:
             self.pool.append(self.pool[-1] + 3.0)    # a genuinely new, harder primitive
         avail = self.pool
-        k = min(4, len(avail))
+        # VARYING complexity: real worlds present simple AND complex unknowns. Some are single-/few-component
+        # (the structure-discovery faculty can UNDERSTAND them — find the law, extend it); the rich ones it
+        # can only FIT. Calibrated confidence (KNOWN #28) tells the two apart honestly.
+        k = int(self.rng.integers(1, min(4, len(avail)) + 1))
         idx = self.rng.choice(len(avail), size=k, replace=False)
         fr = [avail[i] for i in idx]
         co = self.rng.uniform(0.4, 1.0, k) * self.rng.choice([-1, 1], k)
@@ -97,6 +102,19 @@ class Entity:
                 if last <= TAU:
                     return n, last
         return np.inf, last
+
+    # ---- structure-discovery faculty: find the LAW, know your confidence ----------
+    def _discover_law(self, target):
+        """Try to induce the generating law of `target` and judge confidence. Returns
+        (understood, confidence, extrapolation_score). 'understood' (high confidence) means a law it can
+        EXTEND beyond support — verified here on a held-out extrapolation window as an honesty check that
+        confidence tracks real extension. Calibrated (KNOWN #28): high confidence => actually extrapolates."""
+        Xi = self.rng.uniform(-1, 1, 400)
+        Yi = np.array([target(x) for x in Xi]) + 0.02 * self.rng.standard_normal(400)
+        law, _, conf = induce(Xi, Yi, max_terms=8)
+        ex = np.linspace(1.0, 1.6, 40); te = np.array([target(x) for x in ex])
+        extrap = float(np.clip(1 - np.mean((np.asarray(law(ex)) - te) ** 2) / max(te.var(), 1e-9), 0, 1))
+        return conf >= 0.85, conf, extrap
 
     # ---- the meta loop: race to 0 -------------------------------------------------
     def _race_to_zero(self):
@@ -142,6 +160,13 @@ class Entity:
                     event = "grew+knew"; break
         if np.isfinite(cost):
             self.total_known += 1
+        # STRUCTURE-DISCOVERY faculty (integrated, not a separate experiment): having FIT the unknown, the
+        # entity tries to DISCOVER its generating law and judges its own CONFIDENCE (interior-fit predicts
+        # the held-out edge). "Understood" = a high-confidence law it can EXTEND, distinct from merely
+        # fitting. Confidence is calibrated (KNOWN #28), so this is honest — no compounding claim (#27).
+        understood, law_conf, law_extrap = self._discover_law(target)
+        if understood:
+            self.total_understood += 1
         self.encoder.discover()                       # adapt the representation to what it has seen
         self.cost_history.append(cost if np.isfinite(cost) else None)
         self.size_history.append(self.encoder.dim())
@@ -154,6 +179,8 @@ class Entity:
                 "cost_to_know": None if not np.isfinite(cost) else int(cost),
                 "rep_size": self.encoder.dim(), "discovered_freqs": len(self.encoder.freqs),
                 "total_known": self.total_known, "ridge": round(self.config["ridge"], 3),
+                "understood": bool(understood), "law_confidence": round(float(law_conf), 2),
+                "law_extrapolation": round(float(law_extrap), 2), "total_understood": self.total_understood,
                 "race_to_zero": rtz}
         self.rings.append(ring)
         self.vitals.beat(self.name, **{k: v for k, v in ring.items() if not isinstance(v, dict) and v is not None})

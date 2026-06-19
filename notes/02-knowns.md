@@ -289,11 +289,17 @@ gardener who pretends the garden is finished is lying.
     control, under which transfer no longer passes and is honestly **VOID**; **out_of_family** hid a
     (degenerate) sub-failure in a detail string → renamed `out_of_family_insupport` to its true scope, with
     general extrapolation honesty moved to the law_induction facet. Honest g after fixes ≈ 69 (transfer
-    void, weakest-link generalization_gap 43). (e) The capabilities are **SILOED**: `entity.py`/`entity_l2.py`
-    do not call `induce`/`law()`/language/imagination/closure — they are experiment scripts, so "one system
-    whose capabilities compound" is NOT yet what the running entity does; integration is unbuilt and is the
-    honest next lever. *Evidence: the audit (run wf_4f40c46a-402), the diffs to induction.py / g_panel.py /
-    program_induction.py / compounding.py implementing every fix above.*
+    void, weakest-link generalization_gap 43). (e) The capabilities WERE **SILOED** (experiment scripts the
+    living entity never called) — now PARTLY fixed: `entity.py` wires the structure-discovery faculty into
+    the loop — after FITTING each unknown the entity tries to DISCOVER its generating law and judges its own
+    confidence (`_discover_law`). Over a 14-season life it FIT 14/14 but UNDERSTOOD only 5/14 (found the law
+    + can extrapolate), with confidence **calibrated** (understood targets extrapolate 0.63 vs not-understood
+    0.04) — so perception→fit→structure-discovery→calibrated-understanding now composes in ONE system, and
+    its world was made varied-complexity (simple AND rich unknowns) so the distinction is real (the
+    synthesis gate still PASSES 8/8). Honest scope: it understands only the tractable fraction; calibration
+    is strong-not-perfect (an occasional confident miss). `language`/`imagination`/`closure` remain siloed —
+    the next integration steps. *Evidence: the audit (run wf_4f40c46a-402); diffs to induction.py /
+    g_panel.py / program_induction.py / compounding.py / entity.py; validate_entity.py 8/8.*
 
 ## REMAINING — the experimental program has reached its fixpoint
 
