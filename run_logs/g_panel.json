@@ -1,14 +1,14 @@
 {
   "facets": {
     "sample_efficiency": {
-      "score": 100.0,
+      "score": 68.36408181204355,
       "ok": true,
-      "detail": "median ~200 samples-to-tau on held-out scenes"
+      "detail": "median ~100 samples-to-tau on held-out scenes (probed from 25)"
     },
     "transfer/abstraction": {
-      "score": 30.10299956639812,
-      "ok": true,
-      "detail": "structured 2.0x cheaper; orthogonal control 1.00x"
+      "score": null,
+      "ok": false,
+      "detail": "structured 2.0x cheaper; fair orthogonal control 1.50x (reachable naive 90<cap) -> CONTROL FAILED (VOID)"
     },
     "grounded_language": {
       "score": 67.34251527206206,
@@ -35,18 +35,18 @@
       "ok": true,
       "detail": "fixed features reach d=2; LEARNED rep reaches d=4"
     },
-    "out_of_family_robustness": {
+    "out_of_family_insupport": {
       "score": 98.61952427436023,
       "ok": true,
-      "detail": "sawtooth 1.00; gaussian_bump 1.00; step 0.99; law-extrap(periodic) 1.00 -> weakest 99; BOUNDARY: non-periodic law-extrap 0.00 -> next lever = richer law class (program induction)"
+      "detail": "sawtooth 1.00; gaussian_bump 1.00; step 0.99; periodic-law-extrap 1.00 -> weakest 99 (general extrapolation: see law_induction)"
     },
     "law_induction (programs)": {
-      "score": 81.72215474597286,
+      "score": 66.66666666666666,
       "ok": true,
-      "detail": "4/5 families extend (periodic/poly/cubic/exp); trend+periodic is the frontier"
+      "detail": "cross-rate 67% over 24 randomized targets; confidence separation 76pts"
     }
   },
-  "g_geometric": 66.94745923505239,
-  "weakest": 30.10299956639812,
-  "n_void": 0
+  "g_geometric": 68.77399536190639,
+  "weakest": 43.030886883723696,
+  "n_void": 1
 }

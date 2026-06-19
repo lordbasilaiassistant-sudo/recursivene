@@ -134,7 +134,8 @@ def induce(X, Y, max_terms=8, fmax=15.0):
     amax = max([1e-9] + fa + sa)
     fixed = [fixed[i] for i in range(nf) if fixed[i][0] == "1" or fa[i] >= 0.06 * amax]
     sinf = [sinf[j] for j in range(len(sinf)) if sa[j] >= 0.06 * amax]
-    coef, *_ = np.linalg.lstsq(design(fixed, sinf), Y, rcond=None); nf = len(fixed)
+    Afull = design(fixed, sinf)
+    coef, *_ = np.linalg.lstsq(Afull, Y, rcond=None); nf = len(fixed)
 
     def law(x):
         x = np.asarray(x, float)
@@ -144,4 +145,10 @@ def induce(X, Y, max_terms=8, fmax=15.0):
         return out
     terms = [(fixed[i][0], float(coef[i])) for i in range(nf)] + \
             [(f"sin{w:.3f}", float(coef[nf + 2 * j])) for j, w in enumerate(sinf)]
-    return law, terms
+    # CONFIDENCE: fit coefs on the INTERIOR only and predict the held-out EDGE — does the law EXTEND to
+    # unseen points, or only fit in-window? Low confidence flags a FAKE-FIT (e.g. a cubic standing in for
+    # two sinusoids fits the window but collapses at the edge). A caller can reject low-confidence laws.
+    cc, *_ = np.linalg.lstsq(Afull[core], Y[core], rcond=None)
+    pe = Afull[edge] @ cc; ev = float(np.var(Y[edge])) + 1e-12
+    conf = float(max(0.0, 1.0 - np.mean((pe - Y[edge]) ** 2) / ev))
+    return law, terms, conf

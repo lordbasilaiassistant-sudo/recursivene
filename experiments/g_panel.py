@@ -60,14 +60,16 @@ def _fit_cost(fn, rff, sizes=(2000,), seed=0, xe=None, support=(-1, 1)):
 
 # ============================ facets =====================================================
 def f_sample_efficiency():
+    # probe FINELY (from 25) so the score is not auto-pinned at 100 by a coarse 200-sample floor (audit fix).
     rff = _rff(seed=1); rng = np.random.default_rng(7); costs = []
     for t in range(4):
         ws = rng.uniform(2, 12, 2); ph = rng.uniform(0, 6.28, 2)
         costs.append(_fit_cost(lambda x, ws=ws, ph=ph: float(np.sum(np.sin(ws * x + ph))),
-                               rff, sizes=(200, 400, 800, 1600, 3000), seed=t)[0])
+                               rff, sizes=(25, 50, 100, 200, 400, 800, 1600, 3000), seed=t)[0])
     S = _med(costs)
-    score = float(np.clip(100 * (math.log10(2000) - math.log10(max(S, 1))) / (math.log10(2000) - math.log10(200)), 0, 100)) if math.isfinite(S) else 0.0
-    return {"score": score, "ok": True, "detail": f"median ~{S:.0f} samples-to-tau on held-out scenes"}
+    REF_HI, REF_LO = 2000.0, 25.0          # floor = the finest probe, so sub-100 sample-costs score below 100
+    score = float(np.clip(100 * (math.log10(REF_HI) - math.log10(max(S, 1))) / (math.log10(REF_HI) - math.log10(REF_LO)), 0, 100)) if math.isfinite(S) else 0.0
+    return {"score": score, "ok": True, "detail": f"median ~{S:.0f} samples-to-tau on held-out scenes (probed from 25)"}
 
 
 def f_transfer():
@@ -84,19 +86,23 @@ def f_transfer():
             Pp = P @ f; k = Pp / (1 + f @ Pp); w = w + k * (y - f @ w); P = P - np.outer(k, Pp)
             if n % 20 == 0 and np.mean((truth - np.array([w @ feat(z) for z in xe])) ** 2) <= TAU: cost = n; break
         return cost, np.array([w @ feat(z) for z in GRID])
-    def world(prims):
-        bank = [learn(lambda x, p=p: math.sin(p * x), [])[1] for p in prims]
+    def world(bank_prims, target_prims):
+        bank = [learn(lambda x, p=p: math.sin(p * x), [])[1] for p in bank_prims]
         naive, banked = [], []
         for _ in range(4):
-            c = rng.uniform(.5, 1, len(prims)) * rng.choice([-1, 1], len(prims))
-            fn = lambda x, c=c, pr=prims: float(np.sum(c * np.sin(np.array(pr) * x)))
+            c = rng.uniform(.5, 1, len(target_prims)) * rng.choice([-1, 1], len(target_prims))
+            fn = lambda x, c=c, pr=target_prims: float(np.sum(c * np.sin(np.array(pr) * x)))
             naive.append(learn(fn, [])[0]); banked.append(learn(fn, bank)[0])
-        return _med(naive) / max(_med(banked), 1)
-    structured = world([4., 7., 10., 13.])                 # shared primitives -> expect drop
-    orthogonal = world([3.1, 17.3, 28.9, 41.7])            # distinct/no-share -> control, expect ~1.0
-    ok = 0.7 <= orthogonal <= 1.4                          # control must stay flat, else VOID (leak)
+        return _med(naive) / max(_med(banked), 1), _med(naive)
+    # FAIR control (audit fix): the orthogonal bank uses LOW, RFF-REACHABLE freqs that are simply NOT the
+    # target's — so flatness means "no shared structure", NOT "frequencies the RFF physically can't reach"
+    # (the old [17,29,42] bank was flat only because W~N(0,8) can't reach them — a confound).
+    structured, _ = world([4., 7., 10., 13.], [4., 7., 10., 13.])     # bank == target freqs -> expect drop
+    orthogonal, onaive = world([3., 6., 9., 12.], [5., 8., 11., 14.]) # reachable but DISJOINT -> expect ~1.0
+    reachable = onaive < 1900                              # control's naive cost must be well below the 2000 cap
+    ok = bool((0.7 <= orthogonal <= 1.4) and reachable)    # flat AND reachable, else VOID (confounded/leak)
     score = float(np.clip(100 * math.log10(max(structured, 1)), 0, 100)) if ok else NA
-    return {"score": score, "ok": ok, "detail": f"structured {structured:.1f}x cheaper; orthogonal control {orthogonal:.2f}x"
+    return {"score": score, "ok": ok, "detail": f"structured {structured:.1f}x cheaper; fair orthogonal control {orthogonal:.2f}x (reachable naive {onaive:.0f}<cap)"
             + ("" if ok else " -> CONTROL FAILED (VOID)")}
 
 
@@ -205,60 +211,61 @@ def f_self_improvement():
     return {"score": score, "ok": True, "detail": f"live accept-ratchet {ratchet[0]:.2e}->{ratchet[-1]:.2e} ({drop:.1f}x, slope {slope:+.2f} dex/accept)"}
 
 
-def f_out_of_family():
-    """The biggest anti-woo axis: can it learn OUTSIDE the sine family / outside the training support?
-    A pure periodic-fitter scores LOW (correctly). Score vs predicting the mean."""
-    rff = _rff(seed=13); rng = np.random.default_rng(15)
+def f_out_of_family_insupport():
+    """HONEST scope (audit rename): IN-SUPPORT fitting of non-sine families + extrapolating laws WITHIN the
+    periodic hypothesis class. It does NOT claim general out-of-family EXTRAPOLATION — that lives in the
+    law_induction facet (which honestly reports lower cross-rates). The old facet folded a DEGENERATE
+    non-periodic-bump extrapolation (a localized bump is ~0 off-support, so predict-mean already wins — a
+    degenerate metric, not a real failure) into a 'boundary' string; that is removed, not hidden."""
+    rff = _rff(seed=13)
     def saw(x): return 2 * (x / 2 - math.floor(x / 2 + 0.5))
     def bump(x): return math.exp(-((x - 0.3) ** 2) / 0.02)
     def step(x): return 1.0 if x > 0.1 else -1.0
-    targets = {"sawtooth": saw, "gaussian_bump": bump, "step": step}
     scores = []; details = []
-    for nm, fn in targets.items():
+    for nm, fn in {"sawtooth": saw, "gaussian_bump": bump, "step": step}.items():
         _, mse = _fit_cost(fn, rff, sizes=(2500,), seed=20)
         truth = np.array([fn(x) for x in GRID]); e_mean = np.mean((truth - truth.mean()) ** 2)
         sc = float(np.clip(1 - mse / max(e_mean, 1e-9), 0, 1)); scores.append(sc); details.append(f"{nm} {sc:.2f}")
-    # EXTRAPOLATION via the entity's parsimonious law() (its real capability now). Periodic law extends;
-    # a non-periodic target (gaussian bump) does NOT — that is the remaining honest boundary.
-    def law_extrap(tgt, ex):
-        enc = SpectralEncoder(n_freqs=20, fmax=20.0, seed=0); r = np.random.default_rng(16)
-        xs = r.uniform(-1, 1, 800)
-        for x in xs: enc.observe(x, tgt(x) + 0.02 * r.standard_normal())
-        enc.discover(); law = enc.law()
-        def lp(x): return np.concatenate([np.sin(law * x), np.cos(law * x), [1.0]])
-        d = 2 * len(law) + 1; P = np.eye(d); w = np.zeros(d)
-        for x in xs:
-            f = lp(x); Pp = P @ f; k = Pp/(1+f@Pp); w = w+k*(tgt(x)-f@w); P = P-np.outer(k, Pp)
-        tr = np.array([tgt(x) for x in ex]); em = np.mean((tr - tr.mean()) ** 2)
-        return float(np.clip(1 - np.mean((np.array([w@lp(x) for x in ex]) - tr) ** 2) / max(em, 1e-9), 0, 1))
-    ext_periodic = law_extrap(lambda x: math.sin(5 * x), np.linspace(1.0, 1.6, 50))   # extends (law)
-    ext_nonper = law_extrap(bump, np.linspace(1.0, 1.6, 50))                            # boundary (no law)
-    scores.append(ext_periodic); details.append(f"law-extrap(periodic) {ext_periodic:.2f}")
-    # Score what the entity CAN do (in-support out-of-family + extrapolating laws WITHIN its hypothesis
-    # class). The non-periodic-law extrapolation is a HYPOTHESIS-CLASS limit (sinusoidal law can't
-    # represent a localized bump) — a category boundary, not a graded failure — so it is NAMED as the
-    # next lever (program induction over a richer primitive grammar), not scored as a g-crashing 0.
+    # extrapolating a PERIODIC law (within the hypothesis class) via enc.law()
+    enc = SpectralEncoder(n_freqs=20, fmax=20.0, seed=0); r = np.random.default_rng(16); xs = r.uniform(-1, 1, 800)
+    for x in xs: enc.observe(x, math.sin(5 * x) + 0.02 * r.standard_normal())
+    enc.discover(); law = enc.law()
+    def lp(x): return np.concatenate([np.sin(law * x), np.cos(law * x), [1.0]])
+    d = 2 * len(law) + 1; P = np.eye(d); w = np.zeros(d)
+    for x in xs:
+        f = lp(x); Pp = P @ f; k = Pp/(1+f@Pp); w = w+k*(math.sin(5*x)-f@w); P = P-np.outer(k, Pp)
+        ex = np.linspace(1.0, 1.6, 50); tr = np.array([math.sin(5*z) for z in ex])
+    ext_periodic = float(np.clip(1 - np.mean((np.array([w@lp(z) for z in ex]) - tr) ** 2) / max(tr.var(), 1e-9), 0, 1))
+    scores.append(ext_periodic); details.append(f"periodic-law-extrap {ext_periodic:.2f}")
     score = float(min(scores) * 100)
-    boundary = f"; BOUNDARY: non-periodic law-extrap {ext_nonper:.2f} -> next lever = richer law class (program induction)"
-    return {"score": score, "ok": True, "detail": "; ".join(details) + f" -> weakest {score:.0f}" + boundary}
+    return {"score": score, "ok": True, "detail": "; ".join(details) + f" -> weakest {score:.0f} (general extrapolation: see law_induction)"}
 
 
 def f_law_induction():
-    """Program induction: discover + EXTEND the generating law across function FAMILIES (not just one).
-    Score = mean held-out extrapolation over families; the trend+periodic case drags it (honest)."""
+    """Program induction: discover + EXTEND a generating law. HONEST measure (audit fix): cross-RATE over
+    RANDOMIZED targets (not a curated set) — the real, lower number — gated by whether confidence is
+    CALIBRATED (high held-out confidence => actually extrapolates). Score = cross-rate, VOID if the
+    confidence signal does not separate real laws from fake-fits (then the number can't be trusted)."""
     rng = np.random.default_rng(0); Xtr = rng.uniform(-1, 1, 600); EX = np.linspace(1.0, 1.6, 50)
-    fams = {"sin": lambda x: math.sin(5 * x), "x^2": lambda x: x * x - 0.5,
-            "x^3": lambda x: 0.5 * x ** 3 - x, "exp": lambda x: 0.4 * math.exp(0.9 * x),
-            "trend+sin": lambda x: 0.8 * x + math.sin(7 * x)}
-    sc = []
-    for fn in fams.values():
-        Ytr = np.array([fn(x) for x in Xtr]) + 0.02 * rng.standard_normal(len(Xtr))
-        law, _ = induce(Xtr, Ytr, max_terms=8)
-        te = np.array([fn(x) for x in EX]); em = np.mean((te - te.mean()) ** 2)
-        sc.append(max(0.0, 1 - float(np.mean((np.asarray(law(EX)) - te) ** 2)) / max(em, 1e-9)))
-    crossed = sum(s >= 0.85 for s in sc)
-    return {"score": float(np.mean(sc) * 100), "ok": True,
-            "detail": f"{crossed}/{len(sc)} families extend (periodic/poly/cubic/exp); trend+periodic is the frontier"}
+    gens = [lambda: (lambda w: lambda x: math.sin(w * x))(rng.uniform(2, 12)),                       # single-sin
+            lambda: (lambda a, b: lambda x: a * x ** 3 + b * x ** 2 - 0.3)(rng.uniform(-1, 1), rng.uniform(-1, 1)),  # poly
+            lambda: (lambda a: lambda x: 0.4 * math.exp(a * x))(rng.uniform(0.5, 1.2)),               # exp
+            lambda: (lambda s, w: lambda x: s * x + math.sin(w * x))(rng.uniform(.4, 1), rng.uniform(4, 10))]       # trend+sin
+    succ, conf = [], []
+    for i in range(24):
+        fn = gens[i % len(gens)]()
+        Y = np.array([fn(x) for x in Xtr]) + 0.02 * rng.standard_normal(len(Xtr))
+        law, _, c = induce(Xtr, Y, max_terms=8)
+        te = np.array([fn(x) for x in EX]); s = max(0.0, 1 - float(np.mean((np.asarray(law(EX)) - te) ** 2)) / max(te.var(), 1e-9))
+        succ.append(s >= 0.85); conf.append(c)
+    a = np.array(succ, float); c = np.array(conf)
+    hi, lo = c >= 0.8, c < 0.8
+    sep = ((a[hi].mean() if hi.any() else 0) - (a[lo].mean() if lo.any() else 0)) if (hi.any() and lo.any()) else 0.0
+    rate = float(a.mean())
+    calibrated = bool(sep >= 0.2 or not lo.any())   # confidence must separate real from fake (or never low-conf)
+    return {"score": (rate * 100) if calibrated else NA, "ok": calibrated,
+            "detail": f"cross-rate {rate*100:.0f}% over 24 randomized targets; confidence separation {sep*100:.0f}pts"
+            + ("" if calibrated else " -> confidence not calibrated (VOID)")}
 
 
 def main():
@@ -274,7 +281,7 @@ def main():
         ("generalization_gap", f_generalization_gap()),
         ("self_improvement (live)", f_self_improvement()),
         ("dimension_reach", f_dimension_reach()),
-        ("out_of_family_robustness", f_out_of_family()),
+        ("out_of_family_insupport", f_out_of_family_insupport()),
         ("law_induction (programs)", f_law_induction()),
     ]
     for name, r in facets:

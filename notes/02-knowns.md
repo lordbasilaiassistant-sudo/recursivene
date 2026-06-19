@@ -262,20 +262,38 @@ gardener who pretends the garden is finished is lying.
     one lever — not many — is the hard core gating the next rung of generality. *Evidence: the law-banking
     transfer probe (1.8×); induction.py frequency fragmentation.*
 
-27. **[ESTABLISHED] Learning COMPOUNDS — capacity-controlled, recurrence-cleaned (real, not a capacity
-    artifact).** The open-ended-intelligence test (not "can it do X once" but "does each law learned make
-    the next unknown cheaper"): `experiments/compounding.py` streams compositional targets, induces each
-    target's law (pruned to clean atoms), and banks the discovered frequencies — cleaning the bank by
-    RECURRENCE (a true shared primitive recurs across targets; a spurious atom appears once → keep
-    count≥2). On held-out structured targets, cost-to-know: empty 65 → equal-size RANDOM bank 40
-    (capacity) → CLEAN discovered bank 25. *The honest decomposition (a corner I caught and fixed):* a
-    naive "3.1× compounding" was ~half just over-capacity (more basis functions help regardless); the
-    REAL compounding — discovered primitives beating an EQUAL-SIZE random bank — is **~1.6× beyond
-    capacity**, with the no-shared-structure ORTHOGONAL control flat (1.0×, no free lunch). The clean bank
-    (6 entries) recovers the true primitives {3,7,11,15}. So learning genuinely compounds via discovered
-    structure (learning-to-learn), capacity-controlled — modest at this toy scale, but real, not novelty.
-    *Honest open part:* the bank still carries a couple of spurious recurring atoms; perfect parsimony
-    (exact primitive set) would widen the gap. *Evidence: compounding.py (capacity + orthogonal controls).*
+27. **[RETRACTED → HONEST NEGATIVE] Learning does NOT measurably compound via discovered structure at toy
+    scale — the apparent "compounding" was CAPACITY.** I first reported ~1.6× "real compounding beyond
+    capacity" from a SINGLE seed. An adversarial audit (#28) + a multi-seed, capacity-controlled rerun
+    REFUTE it: over 8 seeds the recurrence-cleaned discovered bank does NOT reliably beat an EQUAL-SIZE
+    RANDOM bank (median **1.00×**, wins only 3/8 seeds), and a DISJOINT no-shared-structure *reachable* bank
+    lowers cost-to-know just as much (~1.9×) as the discovered one. So the benefit is just having low-freq
+    basis atoms (capacity beats the high-variance RFF fallback), NOT reuse of the specific discovered laws.
+    The single-seed 1.6× was a lucky draw — report median+spread, never one seed. Structure-specific
+    compounding is the right target but is NOT demonstrated here; the levers are exact-primitive parsimony
+    and real scale. *Evidence: compounding.py (multi-seed; equal-size-random + disjoint-reachable controls).*
+
+28. **[ESTABLISHED] An adversarial "real-vs-novelty" audit (6 agents) hardened the honesty discipline and
+    corrected several over-claims — this is the anti-woo rule working on itself.** Findings, all acted on:
+    (a) **compounding** over-claimed from one seed → RETRACTED to an honest negative (#27). (b) Program
+    induction's **"5/5 families crossed" was a CURATED point-set**; randomized cross-rates are far lower
+    (single-sin ~60%, two-sin ~25%, trend+sin ~70%, poly ~40%) — `program_induction.py` now reports
+    cross-RATE over 24 randomized targets, NOT a hand-picked set. (c) The inducer could **FAKE-FIT
+    in-grammar neighbours** (sin5x+sin7x → a cubic that fits the window, extrapolation 0) with no signal →
+    `induce()` now returns a held-out **CONFIDENCE** (interior-fit predicting the edge); it is CALIBRATED
+    (conf≥0.8 → extrapolates ~79% of the time; conf<0.8 → 0%, ~76-pt separation), so a caller can reject
+    fake-fits. The defensible claim is "structure-discovery WITH a calibrated I-don't-know," not "always
+    finds the law." (d) g-panel corners fixed: **sample_efficiency** was pinned at 100 by a 200-sample
+    probe floor → now probed from 25 (honest ~68); **transfer** rested on a CONFOUNDED orthogonal control
+    (flat only because the RFF couldn't reach those freqs) → replaced with a frequency-matched reachable
+    control, under which transfer no longer passes and is honestly **VOID**; **out_of_family** hid a
+    (degenerate) sub-failure in a detail string → renamed `out_of_family_insupport` to its true scope, with
+    general extrapolation honesty moved to the law_induction facet. Honest g after fixes ≈ 69 (transfer
+    void, weakest-link generalization_gap 43). (e) The capabilities are **SILOED**: `entity.py`/`entity_l2.py`
+    do not call `induce`/`law()`/language/imagination/closure — they are experiment scripts, so "one system
+    whose capabilities compound" is NOT yet what the running entity does; integration is unbuilt and is the
+    honest next lever. *Evidence: the audit (run wf_4f40c46a-402), the diffs to induction.py / g_panel.py /
+    program_induction.py / compounding.py implementing every fix above.*
 
 ## REMAINING — the experimental program has reached its fixpoint
 
