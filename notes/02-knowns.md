@@ -240,7 +240,12 @@ gardener who pretends the garden is finished is lying.
     superposed trend+periodic; the sinusoidal-only law crossed 0 non-periodic). The trend+periodic
     frontier was RESOLVED by adding JOINT continuous frequency refinement (coordinate descent on the
     full-program residual: the sinusoid frequency sharpens to the exact value — 7.47→6.995 — while the
-    poly trend is captured), so discovery is precise regardless of superposition. It is a real step
+    poly trend is captured), so discovery is precise regardless of superposition. *Honest scope (verified,
+    no fake-fitting):* on targets OUTSIDE the grammar (|x|, step, chirp sin(x²), 1/(1+x²)) it fits
+    in-support (Fourier-like, 0.85–1.00) but extrapolation honestly FAILS (0.00–0.59) — it never claims a
+    law it doesn't have; out-of-grammar structure simply isn't discoverable with this hypothesis class, so
+    broadening the grammar (recursive/compositional primitives) is the real lever for more general
+    discovery. It is a real step
     from function-APPROXIMATION toward finding the generating PROGRAM (compression = intelligence,
     Solomonoff/Universal-AI). *Evidence: induction.py, program_induction.py.*
 
