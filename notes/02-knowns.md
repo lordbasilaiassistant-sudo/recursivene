@@ -244,6 +244,19 @@ gardener who pretends the garden is finished is lying.
     from function-APPROXIMATION toward finding the generating PROGRAM (compression = intelligence,
     Solomonoff/Universal-AI). *Evidence: induction.py, program_induction.py.*
 
+26. **[ESTABLISHED] Two weak facets share ONE root cause: imprecise/inconsistent structure
+    identification.** Attacking the g-panel's weakest link (transfer, ~30) with the new lever — bank the
+    INDUCED LAWS (exact generative primitives) instead of noisy solutions, so a new compositional target
+    is near-free — gave only **1.8× (≈ the existing 2.0×), no gain.** Honest diagnosis: induction on a
+    noisy compositional target recovers the primitives only approximately and INCONSISTENTLY — the hidden
+    primitive 3.0 was discovered as 3.1/3.2/3.4/3.8 across different targets, so the bank fragmented into
+    17 near-duplicate frequencies instead of the clean 4, and a new target isn't cleanly representable.
+    This is the SAME limitation that caps extrapolation precision (#24/#25: the trend+periodic frequency
+    mis-estimate). So transfer (#8/#9) and extrapolation-precision converge on a single frontier: **robust,
+    consistent, exact structure identification** (joint system-ID / program synthesis under noise). That
+    one lever — not many — is the hard core gating the next rung of generality. *Evidence: the law-banking
+    transfer probe (1.8×); induction.py frequency fragmentation.*
+
 ## REMAINING — the experimental program has reached its fixpoint
 
 Every question raised has been answered with code+output, and where an answer REQUIRED building
