@@ -44,9 +44,10 @@ def main():
     crossed = sum(s >= 0.85 for s in scores)
     print("\n" + "=" * 86)
     print(f"families CROSSED (extrap >= 0.85): {crossed}/{len(scores)}   (the sinusoidal-only law crossed 0 non-periodic).")
-    print("Honest frontier: joint trend+periodic and high-degree polynomial are still hard — greedy")
-    print("edge-fit mis-estimates a frequency when a trend is superposed, and a low-freq sinusoid can")
-    print("mimic a cubic in-window. That is the genuine hard core of program induction (the AGI-direction).")
+    print("Structured induction (detrend -> oscillation) cracks polynomial, cubic, and exponential laws.")
+    print("Honest frontier (named, not hidden): a mid-frequency sinusoid superposed on a GENTLE linear")
+    print("trend still resists greedy grid search (the trend biases the frequency estimate). Robust joint")
+    print("trend+periodic identification is the genuine hard core of general structure discovery.")
     ok = crossed >= 3
     print("=" * 86)
     print("PASS — program induction extends laws across MULTIPLE function families (periodic, polynomial,"

@@ -39,43 +39,66 @@ def _dictionary(fmax=15.0):
     return atoms
 
 
-def induce(X, Y, max_terms=8, fmax=15.0):
-    """Induce the generating law of Y=f(X) as a sparse combination of grammar atoms, selected by
-    EDGE-VALIDATION: fit on the interior of the data and greedily add the atom that most improves the
-    fit toward the BOUNDARY. This picks programs that EXTEND (a sinusoid that fits the interior but
-    diverges at the edge is rejected; an x or e^ax that extends is kept) — the right inductive bias for
-    discovering a law that extrapolates, rather than the in-support-greedy OMP that grabs sinusoids to
-    approximate any trend. Returns (law_fn, terms); law_fn(x) evaluates the induced program at ANY x."""
-    X = np.asarray(X, float); Y = np.asarray(Y, float); N = len(X)
-    atoms = _dictionary(fmax)
-    vals = [a[1](X) for a in atoms]
-    cx = [a[2] for a in atoms]
-    order = np.argsort(np.abs(X)); ncore = max(8, int(0.70 * N))
-    core, edge = order[:ncore], order[ncore:]
-    yscale = float(np.var(Y[edge])) + 1e-12
+def _greedy(vals, target, core, edge, allowed, cx, max_terms, seed_active=()):
+    """Greedily add atoms (from `allowed`) that most improve EDGE-validation fit of `target`: fit coefs on
+    the interior (core), score residual toward the boundary (edge). Occam penalty breaks near-ties toward
+    simpler atoms. Returns the selected atom indices."""
+    yscale = float(np.var(target[edge])) + 1e-12
+    active = list(seed_active)
 
     def edge_mse(idxs):
+        if not idxs:
+            return float(np.mean(target[edge] ** 2))
         Ac = np.stack([vals[j][core] for j in idxs], axis=1)
-        c, *_ = np.linalg.lstsq(Ac, Y[core], rcond=None)
+        c, *_ = np.linalg.lstsq(Ac, target[core], rcond=None)
         Ae = np.stack([vals[j][edge] for j in idxs], axis=1)
-        return float(np.mean((Ae @ c - Y[edge]) ** 2))
+        return float(np.mean((Ae @ c - target[edge]) ** 2))
 
-    active = [0]                                              # const (offset) always present
     cur = edge_mse(active)
     for _ in range(max_terms):
         best = None
-        for j in range(1, len(atoms)):
+        for j in allowed:
             if j in active:
                 continue
             em = edge_mse(active + [j])
-            score = em + 0.01 * cx[j] * yscale               # Occam: penalize complex atoms (MDL)
+            score = em + 0.01 * cx[j] * yscale
             if best is None or score < best[0]:
                 best = (score, em, j)
-        if best is None or best[1] >= cur * 0.98:            # chosen atom must improve edge fit by >2%
+        if best is None or best[1] >= cur * 0.98:
             break
         active.append(best[2]); cur = best[1]
+    return active
 
-    Aall = np.stack([vals[j] for j in active], axis=1)        # final refit on ALL data
+
+def induce(X, Y, max_terms=8, fmax=15.0):
+    """Induce the generating law of Y=f(X) over a grammar, by STRUCTURED edge-validated search:
+      1) DETREND — find the smooth extending part (polynomial / exponential / const) that best fits
+         toward the boundary; subtract it. (A trend masked under oscillation is captured here, not
+         mimicked by a sinusoid.)
+      2) OSCILLATION + LOCAL — on the residual, find sinusoids (periodic) and gaussians (localized).
+      3) JOINT REFIT on all data.
+    Selecting by edge-validation (interior->boundary) keeps atoms that EXTEND, and separating trend from
+    oscillation fixes the superposition failure of plain greedy. Every atom is closed-form, so the
+    induced law EXTRAPOLATES. Returns (law_fn, terms); law_fn(x) evaluates the program at ANY x."""
+    X = np.asarray(X, float); Y = np.asarray(Y, float); N = len(X)
+    atoms = _dictionary(fmax)
+    vals = [a[1](X) for a in atoms]; cx = [a[2] for a in atoms]
+    order = np.argsort(np.abs(X)); ncore = max(8, int(0.70 * N))
+    core, edge = order[:ncore], order[ncore:]
+    trend_idx = [i for i, a in enumerate(atoms) if a[0] == "1" or a[0].startswith("x^") or a[0].startswith("e^")]
+    osc_idx = [i for i, a in enumerate(atoms) if a[0].startswith(("sin", "cos", "g("))]
+
+    # 1) detrend: the smooth extending part (poly/exp/const), then 2) oscillation+localized on residual.
+    # (Separating trend from oscillation lets a trend be CAPTURED rather than mimicked by a sinusoid; it
+    # cracks polynomial/exponential/cubic families. The remaining hard case — a mid-frequency sinusoid
+    # superposed on a gentle linear trend — resists greedy grid search and is named as the frontier.)
+    trend = _greedy(vals, Y, core, edge, allowed=trend_idx, cx=cx, max_terms=4, seed_active=[0])
+    At = np.stack([vals[j] for j in trend], axis=1)
+    ct, *_ = np.linalg.lstsq(At[core], Y[core], rcond=None)
+    osc = _greedy(vals, Y - At @ ct, core, edge, allowed=osc_idx, cx=cx, max_terms=max_terms)
+
+    active = list(dict.fromkeys(trend + osc))
+    Aall = np.stack([vals[j] for j in active], axis=1)        # 3) joint refit on ALL data
     coef, *_ = np.linalg.lstsq(Aall, Y, rcond=None)
 
     def law(x):

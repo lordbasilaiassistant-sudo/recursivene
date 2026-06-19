@@ -232,14 +232,17 @@ gardener who pretends the garden is finished is lying.
     hypothesis class to a grammar (const, polynomial, sinusoid, gaussian, exponential) and finds the
     shortest program that fits, selected by EDGE-VALIDATION (fit the interior, greedily add the atom that
     best improves the fit toward the boundary — so it keeps atoms that EXTEND, not sinusoids that merely
-    mimic a trend in-window) plus an Occam complexity prior. Result (`experiments/program_induction.py`,
-    PASS): extrapolating to [1.0,1.6] across families — sin(5x) 0.99, x²−0.5 0.99, 0.4·e^0.9x 0.99
-    (3/5 families crossed; the sinusoidal-only law crossed 0 non-periodic). *Honest frontier (named, not
-    hidden):* joint trend+periodic (0.8x+sin7x) and high-degree polynomial (0.5x³−x) are still hard —
-    greedy edge-fit mis-estimates a frequency when a trend is superposed, and a low-freq sinusoid can
-    mimic a cubic in-window. That is the genuine hard core of program induction (the move toward general
-    structure discovery). It is a real step from function-APPROXIMATION toward finding the generating
-    PROGRAM (compression = intelligence, Solomonoff/Universal-AI). *Evidence: induction.py, program_induction.py.*
+    mimic a trend in-window) plus an Occam complexity prior, and STRUCTURED as detrend→oscillation (find
+    the smooth extending part first, then oscillation/localized structure in the residual — so a trend is
+    CAPTURED, not mimicked by a sinusoid). Result (`experiments/program_induction.py`, PASS): extrapolating
+    to [1.0,1.6] across families — sin(5x) 0.99, x²−0.5 1.00, 0.5x³−x 1.00, 0.4·e^0.9x 0.99 (**4/5
+    families crossed**: periodic, polynomial, cubic, exponential; the sinusoidal-only law crossed 0
+    non-periodic). *Honest frontier (named, not hidden):* a mid-frequency sinusoid superposed on a GENTLE
+    linear trend (0.8x+sin7x, 0.08) still resists — the trend biases the greedy frequency estimate;
+    robust JOINT trend+periodic identification is the genuine hard core of general structure discovery
+    (4 induction strategies tried; this case is the boundary, not a tuning oversight). It is a real step
+    from function-APPROXIMATION toward finding the generating PROGRAM (compression = intelligence,
+    Solomonoff/Universal-AI). *Evidence: induction.py, program_induction.py.*
 
 ## REMAINING — the experimental program has reached its fixpoint
 
