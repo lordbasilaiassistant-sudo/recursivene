@@ -1,40 +1,47 @@
 {
   "facets": {
     "sample_efficiency": {
-      "raw": 90.0,
-      "score": 40.79900782463986,
-      "detail": "~90 samples to tau (held-out scenes)"
+      "score": 100.0,
+      "ok": true,
+      "detail": "median ~200 samples-to-tau on held-out scenes"
     },
     "transfer/abstraction": {
-      "raw": 2.0588235294117645,
-      "score": 34.727339189820896,
-      "detail": "new unknowns 2.1x cheaper with banked structure"
+      "score": 30.10299956639812,
+      "ok": true,
+      "detail": "structured 2.0x cheaper; orthogonal control 1.00x"
     },
     "grounded_language": {
-      "raw": 40,
-      "score": 31.999999999999996,
-      "detail": "first communication in 40 pairs, production 100%"
+      "score": 67.34251527206206,
+      "ok": true,
+      "detail": "first communication in 40 pairs, production 100% (shuffle ctrl 21%)"
     },
     "compositional_generalization": {
-      "raw": 1.0,
       "score": 100.0,
-      "detail": "zero-shot name UNSEEN combos 100% (chance 7%)"
-    },
-    "self_improvement": {
-      "raw": 6.818585932497942,
-      "score": 92.31575260011792,
-      "detail": "learned self-edit search 6.8x better than my hand-tuning"
+      "ok": true,
+      "detail": "zero-shot UNSEEN combos 100% vs lookup-control 0% (chance 7%)"
     },
     "generalization_gap": {
-      "raw": 1.4670406680863035,
-      "score": 91.67789234189638,
-      "detail": "held-out/train error ratio 1.47 (1.0 = no overfit)"
+      "score": 43.030886883723696,
+      "ok": true,
+      "detail": "held-out/train error 1.57 (1.0 = no overfit)"
+    },
+    "self_improvement (live)": {
+      "score": 64.04327459523316,
+      "ok": true,
+      "detail": "live accept-ratchet 1.07e+07->3.93e+06 (2.7x, slope -0.10 dex/accept)"
     },
     "dimension_reach": {
-      "raw": 2,
-      "score": 50.0,
-      "detail": "fixed features reach d=2 (walls beyond; learned reps cross it, KNOWN #15)"
+      "score": 60.0,
+      "ok": true,
+      "detail": "fixed features reach d=2; LEARNED rep reaches d=4"
+    },
+    "out_of_family_robustness": {
+      "score": 26.948816370836614,
+      "ok": true,
+      "detail": "sawtooth 1.00; gaussian_bump 1.00; step 0.99; extrapolation 0.27 -> weakest 27 (honest: periodic-in-support fitter, can't extrapolate)"
     }
   },
-  "g_score": 63.074284565210725
+  "g_geometric": 55.523966660154606,
+  "weakest": 26.948816370836614,
+  "n_void": 0
 }
