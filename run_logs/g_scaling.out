@@ -1,0 +1,31 @@
+
+========================================================================
+  g-SCALING — watch the entity get smarter as the substrate scales (toy, laptop)
+========================================================================
+
+  A. DIMENSION REACH — fixed features vs a LEARNED representation (cost-to-know, held-out):
+
+      d |   fixed features |      learned rep
+     ------------------------------------------
+      1 |              300 |              300
+      2 |              800 |              300
+      3 |       WALL (inf) |              300
+      4 |       WALL (inf) |              300
+      5 |       WALL (inf) |              300
+
+     -> fixed features wall at d=3; learned representation reaches further (wall d=>5).
+        Same problem, newly solvable: the entity climbed by improving its REPRESENTATION.
+
+  B. LANGUAGE REACH — does grounded communication hold as the vocabulary grows?
+
+      vocab K |  samples-to-1st-comm |  zero-shot composition
+     --------------------------------------------------------
+            4 |                    6 |                 100%
+            8 |                   39 |                  93%
+           16 |                   89 |                  92%
+
+     -> communication + zero-shot composition hold as the world grows (the channel scales).
+
+========================================================================
+  the lever is a better REPRESENTATION, not more parameters — that is the bet.
+========================================================================

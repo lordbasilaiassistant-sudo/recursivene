@@ -58,12 +58,29 @@ its own goals, it cannot redefine success. Capability-preserving alignment is ga
 into the live closure loop; couple the drive to the frontier problem-generator for open-ended goal
 INVENTION (beyond a fixed pool).
 
-## L5 — SYMBOLS / LANGUAGE LAST
+## L5 — SYMBOLS / LANGUAGE LAST  (seed BUILT)
 Language enters as **another observation channel** into the already-grounded world model — a
 second encoder whose tokens must predict and be predicted by latent world-state, not a separate
 autoregressive head. Symbols are discrete latents compressing recurrent structure the world model
 already represents; preferences can then be specified symbolically. This is the explicit
 inversion of LLM training order: physics first, words last, words grounded on physics.
+
+*Status: the smallest honest seed is built + gated.* `recursivene/language.py` ([[02-knowns]] #22):
+a symbol's meaning is a world-state perceived from raw samples; a bidirectional symbol↔latent map
+(production = name what you perceive, comprehension = imagine what you're told), trained only on
+(scene, symbol) pairs. `experiments/l5_language.py` (PASS): reaches reliable communication in **~40
+paired examples** (production 100%) and **zero-shot generalizes to UNSEEN symbol combinations (100%
+vs 7% chance)** — systematic compositional generalization. Honest scope: linear grounding, 1-D
+concepts, tiny vocab — the seed, not English; the ~40-pair sample-efficiency is the algorithmic bet.
+*Next within L5:* nonlinear grounding (so composition isn't just linearity), larger vocab + richer
+scenes, and wiring the language faculty into the living entity (Nous names/imagines as part of its life).
+
+## Seeing it: the g-panel + g-scaling (laptop)
+`experiments/g_panel.py` ([[02-knowns]] #23) scores orthogonal facets of intelligence on held-out data
+(0-100 toy-scale tracker, not a human IQ); `experiments/g_scaling.py` is the movie — it shows the entity
+CLIMB as the substrate scales (fixed features wall on input dimension while a LEARNED representation
+crosses it, KNOWN #15; grounded communication holding as the vocabulary grows). The lever is a better
+REPRESENTATION, not more parameters.
 
 ## Why language must be last
 A symbol is only meaningful as a compressed pointer into a model of what it refers to. Train
