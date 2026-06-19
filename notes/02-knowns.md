@@ -257,6 +257,21 @@ gardener who pretends the garden is finished is lying.
     one lever — not many — is the hard core gating the next rung of generality. *Evidence: the law-banking
     transfer probe (1.8×); induction.py frequency fragmentation.*
 
+27. **[ESTABLISHED] Learning COMPOUNDS — capacity-controlled, recurrence-cleaned (real, not a capacity
+    artifact).** The open-ended-intelligence test (not "can it do X once" but "does each law learned make
+    the next unknown cheaper"): `experiments/compounding.py` streams compositional targets, induces each
+    target's law (pruned to clean atoms), and banks the discovered frequencies — cleaning the bank by
+    RECURRENCE (a true shared primitive recurs across targets; a spurious atom appears once → keep
+    count≥2). On held-out structured targets, cost-to-know: empty 65 → equal-size RANDOM bank 40
+    (capacity) → CLEAN discovered bank 25. *The honest decomposition (a corner I caught and fixed):* a
+    naive "3.1× compounding" was ~half just over-capacity (more basis functions help regardless); the
+    REAL compounding — discovered primitives beating an EQUAL-SIZE random bank — is **~1.6× beyond
+    capacity**, with the no-shared-structure ORTHOGONAL control flat (1.0×, no free lunch). The clean bank
+    (6 entries) recovers the true primitives {3,7,11,15}. So learning genuinely compounds via discovered
+    structure (learning-to-learn), capacity-controlled — modest at this toy scale, but real, not novelty.
+    *Honest open part:* the bank still carries a couple of spurious recurring atoms; perfect parsimony
+    (exact primitive set) would widen the gap. *Evidence: compounding.py (capacity + orthogonal controls).*
+
 ## REMAINING — the experimental program has reached its fixpoint
 
 Every question raised has been answered with code+output, and where an answer REQUIRED building

@@ -121,7 +121,20 @@ def induce(X, Y, max_terms=8, fmax=15.0):
                     br, best = r, float(w)
             sinf[i] = best
 
-    A = build(sinf); coef, *_ = np.linalg.lstsq(A, Y, rcond=None); nf = len(fixed)
+    def design(fix, freqs):
+        cols = [fn(X) for _, fn in fix] + [g(w * X) for w in freqs for g in (np.sin, np.cos)]
+        return np.stack(cols, axis=1) if cols else np.ones((len(X), 1))
+
+    coef, *_ = np.linalg.lstsq(design(fixed, sinf), Y, rcond=None); nf = len(fixed)
+    # PRUNE negligible-amplitude components -> a CLEAN, parsimonious law (the same primitive discovered
+    # in different data lands on the same few atoms, so laws BANK consistently and learning COMPOUNDS).
+    fa = [abs(coef[i]) * float(np.linalg.norm(fixed[i][1](X))) for i in range(nf)]
+    sa = [math.hypot(coef[nf + 2 * j], coef[nf + 2 * j + 1]) * float(np.linalg.norm(np.sin(sinf[j] * X)))
+          for j in range(len(sinf))]
+    amax = max([1e-9] + fa + sa)
+    fixed = [fixed[i] for i in range(nf) if fixed[i][0] == "1" or fa[i] >= 0.06 * amax]
+    sinf = [sinf[j] for j in range(len(sinf)) if sa[j] >= 0.06 * amax]
+    coef, *_ = np.linalg.lstsq(design(fixed, sinf), Y, rcond=None); nf = len(fixed)
 
     def law(x):
         x = np.asarray(x, float)
