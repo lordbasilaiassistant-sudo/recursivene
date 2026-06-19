@@ -18,6 +18,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 const CONFIG = {
   radii:   { core: 6, shell: 9, neuron: 18, pool: 30 },
   timing:  { secPerSeason: 1.6, titleFadeMs: 3200 },
+  orbit:   { rate: 0.02 },   // each concept orbits at speed = its frequency * rate (freq -> orbital freq)
   strain:  { threshold: 1000, kickMax: 0.9, chromaMax: 0.006 },   // cost_to_know above threshold = strain
   synapse: { k: 3, base: 0.05, flash: 0.7 },
   bloom:   { strength: 0.62, radius: 0.5, threshold: 0.12, strainSurge: 0.8 },
@@ -135,7 +136,8 @@ for (let k = 0; k < NN; k++) {
   npos[k*3]=v.x; npos[k*3+1]=v.y; npos[k*3+2]=v.z;
   const c = ramp(t); ncol[k*3]=c.r; ncol[k*3+1]=c.g; ncol[k*3+2]=c.b;
   nsize[k]=3.0; nalpha[k]=0; nseed[k]=Math.random()*6.28;
-  meta.push({ id: FIELDS.nId(nu), freq: FIELDS.nFreq(nu), disc: FIELDS.nDisc(nu), pos: v, known: false });
+  meta.push({ id: FIELDS.nId(nu), freq: FIELDS.nFreq(nu), disc: FIELDS.nDisc(nu), pos: v, known: false,
+    rxz: Math.hypot(v.x, v.z), y0: v.y, phi0: Math.atan2(v.z, v.x) });
 }
 const ngeo = new THREE.BufferGeometry();
 ngeo.setAttribute('position', new THREE.BufferAttribute(npos,3));
@@ -280,6 +282,7 @@ document.getElementById('legend').innerHTML = `<b>legend — every element ↔ a
   <span class="sw" style="background:#9a7dff"></span>core = rep_size · shell = garden.n_features<br>
   <span class="sw" style="background:#ff3b5c"></span>crimson flare = cost_to_know strain spike<br>
   <span class="sw" style="background:#c9c4b8"></span>RULER = protected TAU (never glows)<br>
+  <span style="color:#9aa6c5">· orrery: each concept orbits at speed = its own frequency</span><br>
   <span style="color:#4a5680">· faint dust = ambient framing (not data)</span>`;
 
 /* ============================ tooltip + raycast ================================= */
@@ -361,7 +364,7 @@ function fireEvents(clock){ const i = clamp(Math.round(clock)-1,0,N-1); if (i===
 }
 function flashSynapses(k){ for (let e=0;e<E;e++){ if (edges[e].a===k||edges[e].b===k){ ealpha[e*2]=CONFIG.synapse.flash; ealpha[e*2+1]=CONFIG.synapse.flash; } } }
 function spawnPulse(at, strain){ fx.push({ at:at.clone(), t:0, life:strain?1.7:0.9, strain }); }
-function addTravel(a,b,strain){ if (pulses.length>=MAXP) return; pulses.push({ a, b, t:0, sp:1.6+Math.random()*0.8, strain }); }
+function addTravel(a,b,strain){ if (pulses.length>=MAXP) return; pulses.push({ a:a.clone(), b:b.clone(), t:0, sp:1.6+Math.random()*0.8, strain }); }
 
 /* expanding-ring + shockwave fx */
 const fx = []; const fxRings = [];
@@ -425,10 +428,19 @@ sparkDraw();
 
 let prev = performance.now();
 applyState(1); fireEvents(1);
-function loop(now){ const dt=Math.min(0.05,(now-prev)/1000); prev=now; nmat.uniforms.uTime.value = now*0.001;
+function loop(now){ const dt=Math.min(0.05,(now-prev)/1000); prev=now; const ts=now*0.001; nmat.uniforms.uTime.value = ts;
   if (playing){ clock += dt*speed/CONFIG.timing.secPerSeason; if (clock>=N+0.999){ clock=1; lastInt=-1; meta.forEach(m=>m.known=false); }
     fireEvents(clock); }
-  applyState(clock); stepFx(dt); controls.update();
+  applyState(clock);
+  // orrery: each concept orbits at speed = its own frequency (freq -> orbital frequency)
+  for (let k=0;k<NN;k++){ const m=meta[k]; const ang=m.phi0 + m.freq*CONFIG.orbit.rate*ts;
+    m.pos.set(Math.cos(ang)*m.rxz, m.y0, Math.sin(ang)*m.rxz);
+    npos[k*3]=m.pos.x; npos[k*3+1]=m.pos.y; npos[k*3+2]=m.pos.z; }
+  ngeo.attributes.position.needsUpdate = true;
+  for (let i=0;i<E;i++){ const a=meta[edges[i].a].pos, b=meta[edges[i].b].pos;
+    epos[i*6]=a.x;epos[i*6+1]=a.y;epos[i*6+2]=a.z; epos[i*6+3]=b.x;epos[i*6+4]=b.y;epos[i*6+5]=b.z; }
+  egeo.attributes.position.needsUpdate = true;
+  stepFx(dt); controls.update();
   glow.rotation.y += dt*0.15; core.rotation.y -= dt*0.2; core.rotation.x += dt*0.05;
   // strain envelope -> bloom surge + chromatic + camera kick
   strainEnv = Math.max(0, strainEnv - dt*0.7); kick = Math.max(0, kick - dt*1.7);
