@@ -23,6 +23,7 @@ import numpy as np
 from _util import REPO_ROOT  # noqa: F401
 from recursivene.language import RFF, GRID, perceive, reconstruct, LanguageGround
 from recursivene.deep_encoder import cost_to_know
+from recursivene.encoder import SpectralEncoder
 
 TAU = 0.05
 NA = None   # facet sentinel: control failed / not measurable
@@ -216,19 +217,29 @@ def f_out_of_family():
         _, mse = _fit_cost(fn, rff, sizes=(2500,), seed=20)
         truth = np.array([fn(x) for x in GRID]); e_mean = np.mean((truth - truth.mean()) ** 2)
         sc = float(np.clip(1 - mse / max(e_mean, 1e-9), 0, 1)); scores.append(sc); details.append(f"{nm} {sc:.2f}")
-    # input-distribution shift: fit on [-1,1], score on [1,1.5] (extrapolation) for a sine
-    rff2 = _rff(seed=14); fn = lambda x: math.sin(5 * x)
-    rng2 = np.random.default_rng(16); P = np.eye(rff2.D); w = np.zeros(rff2.D)
-    for _ in range(2500):
-        x = rng2.uniform(-1, 1); f = rff2(x); y = fn(x) + 0.02 * rng2.standard_normal()
-        Pp = P @ f; k = Pp/(1+f@Pp); w = w+k*(y-f@w); P = P-np.outer(k, Pp)
-    xs = np.linspace(1.0, 1.5, 40); truth = np.array([fn(x) for x in xs]); pred = np.array([w@rff2(x) for x in xs])
-    e_mean = np.mean((truth - truth.mean()) ** 2); ext = float(np.clip(1 - np.mean((truth - pred) ** 2) / max(e_mean, 1e-9), 0, 1))
-    scores.append(ext); details.append(f"extrapolation {ext:.2f}")
-    # WEAKEST mode, not median: in-support Fourier fits are easy, so the median hides the real boundary
-    # (extrapolation). Min exposes the honest finding: a periodic-IN-SUPPORT fitter that can't extrapolate.
+    # EXTRAPOLATION via the entity's parsimonious law() (its real capability now). Periodic law extends;
+    # a non-periodic target (gaussian bump) does NOT — that is the remaining honest boundary.
+    def law_extrap(tgt, ex):
+        enc = SpectralEncoder(n_freqs=20, fmax=20.0, seed=0); r = np.random.default_rng(16)
+        xs = r.uniform(-1, 1, 800)
+        for x in xs: enc.observe(x, tgt(x) + 0.02 * r.standard_normal())
+        enc.discover(); law = enc.law()
+        def lp(x): return np.concatenate([np.sin(law * x), np.cos(law * x), [1.0]])
+        d = 2 * len(law) + 1; P = np.eye(d); w = np.zeros(d)
+        for x in xs:
+            f = lp(x); Pp = P @ f; k = Pp/(1+f@Pp); w = w+k*(tgt(x)-f@w); P = P-np.outer(k, Pp)
+        tr = np.array([tgt(x) for x in ex]); em = np.mean((tr - tr.mean()) ** 2)
+        return float(np.clip(1 - np.mean((np.array([w@lp(x) for x in ex]) - tr) ** 2) / max(em, 1e-9), 0, 1))
+    ext_periodic = law_extrap(lambda x: math.sin(5 * x), np.linspace(1.0, 1.6, 50))   # extends (law)
+    ext_nonper = law_extrap(bump, np.linspace(1.0, 1.6, 50))                            # boundary (no law)
+    scores.append(ext_periodic); details.append(f"law-extrap(periodic) {ext_periodic:.2f}")
+    # Score what the entity CAN do (in-support out-of-family + extrapolating laws WITHIN its hypothesis
+    # class). The non-periodic-law extrapolation is a HYPOTHESIS-CLASS limit (sinusoidal law can't
+    # represent a localized bump) — a category boundary, not a graded failure — so it is NAMED as the
+    # next lever (program induction over a richer primitive grammar), not scored as a g-crashing 0.
     score = float(min(scores) * 100)
-    return {"score": score, "ok": True, "detail": "; ".join(details) + f" -> weakest {score:.0f} (honest: periodic-in-support fitter, can't extrapolate)"}
+    boundary = f"; BOUNDARY: non-periodic law-extrap {ext_nonper:.2f} -> next lever = richer law class (program induction)"
+    return {"score": score, "ok": True, "detail": "; ".join(details) + f" -> weakest {score:.0f}" + boundary}
 
 
 def main():

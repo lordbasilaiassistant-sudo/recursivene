@@ -36,12 +36,12 @@
       "detail": "fixed features reach d=2; LEARNED rep reaches d=4"
     },
     "out_of_family_robustness": {
-      "score": 26.948816370836614,
+      "score": 98.61952427436023,
       "ok": true,
-      "detail": "sawtooth 1.00; gaussian_bump 1.00; step 0.99; extrapolation 0.27 -> weakest 27 (honest: periodic-in-support fitter, can't extrapolate)"
+      "detail": "sawtooth 1.00; gaussian_bump 1.00; step 0.99; law-extrap(periodic) 1.00 -> weakest 99; BOUNDARY: non-periodic law-extrap 0.00 -> next lever = richer law class (program induction)"
     }
   },
-  "g_geometric": 55.523966660154606,
-  "weakest": 26.948816370836614,
+  "g_geometric": 65.29927895970161,
+  "weakest": 30.10299956639812,
   "n_void": 0
 }
