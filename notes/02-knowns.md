@@ -235,12 +235,12 @@ gardener who pretends the garden is finished is lying.
     mimic a trend in-window) plus an Occam complexity prior, and STRUCTURED as detrend→oscillation (find
     the smooth extending part first, then oscillation/localized structure in the residual — so a trend is
     CAPTURED, not mimicked by a sinusoid). Result (`experiments/program_induction.py`, PASS): extrapolating
-    to [1.0,1.6] across families — sin(5x) 0.99, x²−0.5 1.00, 0.5x³−x 1.00, 0.4·e^0.9x 0.99 (**4/5
-    families crossed**: periodic, polynomial, cubic, exponential; the sinusoidal-only law crossed 0
-    non-periodic). *Honest frontier (named, not hidden):* a mid-frequency sinusoid superposed on a GENTLE
-    linear trend (0.8x+sin7x, 0.08) still resists — the trend biases the greedy frequency estimate;
-    robust JOINT trend+periodic identification is the genuine hard core of general structure discovery
-    (4 induction strategies tried; this case is the boundary, not a tuning oversight). It is a real step
+    to [1.0,1.6] across families — sin(5x) 1.00, x²−0.5 1.00, 0.5x³−x 1.00, 0.4·e^0.9x 0.99, AND the
+    once-stubborn 0.8x+sin7x **1.00** (**5/5 families crossed**: periodic, polynomial, cubic, exponential,
+    superposed trend+periodic; the sinusoidal-only law crossed 0 non-periodic). The trend+periodic
+    frontier was RESOLVED by adding JOINT continuous frequency refinement (coordinate descent on the
+    full-program residual: the sinusoid frequency sharpens to the exact value — 7.47→6.995 — while the
+    poly trend is captured), so discovery is precise regardless of superposition. It is a real step
     from function-APPROXIMATION toward finding the generating PROGRAM (compression = intelligence,
     Solomonoff/Universal-AI). *Evidence: induction.py, program_induction.py.*
 

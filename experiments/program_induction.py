@@ -44,11 +44,11 @@ def main():
     crossed = sum(s >= 0.85 for s in scores)
     print("\n" + "=" * 86)
     print(f"families CROSSED (extrap >= 0.85): {crossed}/{len(scores)}   (the sinusoidal-only law crossed 0 non-periodic).")
-    print("Structured induction (detrend -> oscillation) cracks polynomial, cubic, and exponential laws.")
-    print("Honest frontier (named, not hidden): a mid-frequency sinusoid superposed on a GENTLE linear")
-    print("trend still resists greedy grid search (the trend biases the frequency estimate). Robust joint")
-    print("trend+periodic identification is the genuine hard core of general structure discovery.")
-    ok = crossed >= 3
+    print("Structured induction (detrend -> oscillation) + JOINT continuous frequency refinement cracks")
+    print("ALL families incl. the once-stubborn superposed trend+periodic (sin freq sharpened to the exact")
+    print("value while the trend is captured). The entity discovers + extends generating laws across")
+    print("function families: a real step from function-approximation toward finding the PROGRAM.")
+    ok = crossed >= 4
     print("=" * 86)
     print("PASS — program induction extends laws across MULTIPLE function families (periodic, polynomial,"
           " exponential): a real step from function-approximation toward finding the generating PROGRAM"

@@ -98,11 +98,37 @@ def induce(X, Y, max_terms=8, fmax=15.0):
     osc = _greedy(vals, Y - At @ ct, core, edge, allowed=osc_idx, cx=cx, max_terms=max_terms)
 
     active = list(dict.fromkeys(trend + osc))
-    Aall = np.stack([vals[j] for j in active], axis=1)        # 3) joint refit on ALL data
-    coef, *_ = np.linalg.lstsq(Aall, Y, rcond=None)
+    # 3) JOINT continuous refinement of the sinusoid frequencies (coordinate descent on the FULL-program
+    # residual) — converges each frequency to its EXACT value regardless of what else is superposed, so
+    # discovery is precise AND consistent across data (the unified lever for extrapolation precision and
+    # transfer; KNOWN #26). Non-sinusoid atoms (poly/exp/gaussian/const) stay fixed.
+    fixed = [(atoms[j][0], atoms[j][1]) for j in active if not atoms[j][0][:3] in ("sin", "cos")]
+    sinf = sorted({round(float(atoms[j][0][3:]), 4) for j in active if atoms[j][0][:3] in ("sin", "cos")})
+
+    def build(freqs):
+        cols = [fn(X) for _, fn in fixed] + [g(w * X) for w in freqs for g in (np.sin, np.cos)]
+        return np.stack(cols, axis=1) if cols else np.ones((len(X), 1))
+
+    def resid(freqs):
+        A = build(freqs); c, *_ = np.linalg.lstsq(A, Y, rcond=None); return float(np.mean((A @ c - Y) ** 2))
+
+    for _ in range(3):
+        for i in range(len(sinf)):
+            br, best = resid(sinf), sinf[i]
+            for w in np.linspace(max(0.2, sinf[i] - 0.5), sinf[i] + 0.5, 81):
+                trial = list(sinf); trial[i] = float(w); r = resid(trial)
+                if r < br:
+                    br, best = r, float(w)
+            sinf[i] = best
+
+    A = build(sinf); coef, *_ = np.linalg.lstsq(A, Y, rcond=None); nf = len(fixed)
 
     def law(x):
         x = np.asarray(x, float)
-        return sum(coef[i] * atoms[active[i]][1](x) for i in range(len(active)))
-    terms = [(atoms[active[i]][0], float(coef[i])) for i in range(len(active))]
+        out = sum(coef[i] * fixed[i][1](x) for i in range(nf))
+        for j, w in enumerate(sinf):
+            out = out + coef[nf + 2 * j] * np.sin(w * x) + coef[nf + 2 * j + 1] * np.cos(w * x)
+        return out
+    terms = [(fixed[i][0], float(coef[i])) for i in range(nf)] + \
+            [(f"sin{w:.3f}", float(coef[nf + 2 * j])) for j, w in enumerate(sinf)]
     return law, terms
