@@ -39,9 +39,14 @@
       "score": 98.61952427436023,
       "ok": true,
       "detail": "sawtooth 1.00; gaussian_bump 1.00; step 0.99; law-extrap(periodic) 1.00 -> weakest 99; BOUNDARY: non-periodic law-extrap 0.00 -> next lever = richer law class (program induction)"
+    },
+    "law_induction (programs)": {
+      "score": 81.72215474597286,
+      "ok": true,
+      "detail": "4/5 families extend (periodic/poly/cubic/exp); trend+periodic is the frontier"
     }
   },
-  "g_geometric": 65.29927895970161,
+  "g_geometric": 66.94745923505239,
   "weakest": 30.10299956639812,
   "n_void": 0
 }

@@ -24,6 +24,7 @@ from _util import REPO_ROOT  # noqa: F401
 from recursivene.language import RFF, GRID, perceive, reconstruct, LanguageGround
 from recursivene.deep_encoder import cost_to_know
 from recursivene.encoder import SpectralEncoder
+from recursivene.induction import induce
 
 TAU = 0.05
 NA = None   # facet sentinel: control failed / not measurable
@@ -242,6 +243,24 @@ def f_out_of_family():
     return {"score": score, "ok": True, "detail": "; ".join(details) + f" -> weakest {score:.0f}" + boundary}
 
 
+def f_law_induction():
+    """Program induction: discover + EXTEND the generating law across function FAMILIES (not just one).
+    Score = mean held-out extrapolation over families; the trend+periodic case drags it (honest)."""
+    rng = np.random.default_rng(0); Xtr = rng.uniform(-1, 1, 600); EX = np.linspace(1.0, 1.6, 50)
+    fams = {"sin": lambda x: math.sin(5 * x), "x^2": lambda x: x * x - 0.5,
+            "x^3": lambda x: 0.5 * x ** 3 - x, "exp": lambda x: 0.4 * math.exp(0.9 * x),
+            "trend+sin": lambda x: 0.8 * x + math.sin(7 * x)}
+    sc = []
+    for fn in fams.values():
+        Ytr = np.array([fn(x) for x in Xtr]) + 0.02 * rng.standard_normal(len(Xtr))
+        law, _ = induce(Xtr, Ytr, max_terms=8)
+        te = np.array([fn(x) for x in EX]); em = np.mean((te - te.mean()) ** 2)
+        sc.append(max(0.0, 1 - float(np.mean((np.asarray(law(EX)) - te) ** 2)) / max(em, 1e-9)))
+    crossed = sum(s >= 0.85 for s in sc)
+    return {"score": float(np.mean(sc) * 100), "ok": True,
+            "detail": f"{crossed}/{len(sc)} families extend (periodic/poly/cubic/exp); trend+periodic is the frontier"}
+
+
 def main():
     print("\n" + "=" * 82)
     print("  RecursiveNe g-PANEL (honesty-audited) — how smart is the entity? (laptop, numpy)")
@@ -256,6 +275,7 @@ def main():
         ("self_improvement (live)", f_self_improvement()),
         ("dimension_reach", f_dimension_reach()),
         ("out_of_family_robustness", f_out_of_family()),
+        ("law_induction (programs)", f_law_induction()),
     ]
     for name, r in facets:
         s = r["score"]; sv = "  N/A" if s is NA else f"{s:5.1f}"
